@@ -8,6 +8,8 @@ class Producto extends Model
 {
     protected $table = 'producto';
 
+    public $timestamps = false;
+
     protected $fillable = [
         'categoria_id', 'nombre', 'descripcion', 'precio_unitario',
         'talla', 'imagen_url', 'qr_code', 'stock_actual',

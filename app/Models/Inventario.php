@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Inventario extends Model
 {
     protected $table = 'inventario';
+    public $timestamps = false;
     protected $fillable = ['producto_id', 'usuario_id', 'tipo', 'cantidad', 'costo_unitario', 'tecnica', 'fecha', 'observacion'];
     protected $casts = ['costo_unitario' => 'decimal:2', 'fecha' => 'datetime'];
 

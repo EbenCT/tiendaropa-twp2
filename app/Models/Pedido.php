@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Pedido extends Model
 {
     protected $table = 'pedido';
+    public $timestamps = false;
     protected $fillable = ['usuario_id', 'fecha', 'estado', 'direccion', 'telefono', 'referencia', 'total', 'activo'];
     protected $casts = ['activo' => 'boolean', 'fecha' => 'datetime'];
 
