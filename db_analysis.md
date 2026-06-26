@@ -1,64 +1,97 @@
-# Análisis de la Base de Datos Existente – db_grupo21sa
+# Análisis de la Base de Datos – db_grupo21sa
 
-## Tablas encontradas (13 en total)
+## Resumen
 
-| Tabla | Filas | Estado para el proyecto nuevo |
-|-------|-------|-------------------------------|
-| `catalogo` | 3 | ✅ Reutilizar (catálogos = secciones tipo hombre/mujer/niños) |
-| `catalogo_producto` | 11 | ✅ Reutilizar (pivot catálogo ↔ producto) |
-| `categoria` | 15 | ✅ Reutilizar (subcategorías de productos) |
-| `cuota` | 7 | ✅ Reutilizar + extender (plan de pagos, vincular a Stripe) |
-| `detalle_pedido` | 16 | ✅ Reutilizar |
-| `inventario` | 12 | ✅ Reutilizar (movimientos de stock) |
-| `pago` | 4 | ✅ Reutilizar + agregar columna stripe_payment_intent_id |
-| `pedido` | 6 | ✅ Reutilizar |
-| `producto` | 20 | ✅ Reutilizar + ajustar (ver notas) |
-| `producto_promocion` | 6 | ✅ Reutilizar |
-| `promocion` | 3 | ✅ Reutilizar |
-| `usuario` | 15 | ⚠️ Adaptar (cambiar campo `rol` texto → FK a tabla roles) |
-| `venta` | 4 | ✅ Reutilizar |
+Base de datos PostgreSQL remota en `db.tecnoweb.org.bo:5432`.  
+Total: **21 tablas** (13 originales del proyecto Java + 8 nuevas creadas por migraciones aditivas).
 
-## Tablas que HAY QUE CREAR (nuevas)
+---
 
-| Tabla | Por qué |
-|-------|---------|
-| `roles` | El campo `rol` en `usuario` es varchar libre, necesita tabla normalizada con 4 roles |
-| `carrito_item` | No existe carrito persistente en BD |
-| `favorito` | No existe |
-| `menu_item` | Menú dinámico por rol |
-| `page_visit` | Contador de visitas por página |
-| `talla` | Las tallas están en `producto.talla` como varchar libre (ej: "S,M,L") — necesita normalizar |
-| `producto_talla` | Pivot producto ↔ talla con stock por talla |
-| `metodo_pago_usuario` | Métodos de pago guardados (Stripe) |
+## Tablas originales del proyecto Java (13)
 
-## Problemas / Ajustes en tablas existentes
+| Tabla | Filas | Estado | Modelo Eloquent |
+|-------|-------|--------|-----------------|
+| `catalogo` | 3 | ✅ Reutilizada sin cambios | `Catalogo` |
+| `catalogo_producto` | 11 | ✅ Reutilizada (pivot catálogo ↔ producto) | — (relación M:M) |
+| `categoria` | 15 | ✅ Reutilizada sin cambios | `Categoria` |
+| `cuota` | 7 | ✅ Reutilizada (plan de pagos) | `Cuota` |
+| `detalle_pedido` | 16 | ✅ Reutilizada sin cambios | `DetallePedido` |
+| `inventario` | 12 | ✅ Reutilizada (movimientos stock, técnica FIFO/Promedio) | `Inventario` |
+| `pago` | 4 | ✅ Reutilizada (columnas Stripe pendientes) | `Pago` |
+| `pedido` | 6 | ✅ Reutilizada sin cambios | `Pedido` |
+| `producto` | 20 | ✅ Adaptada (+`destacado`, +`es_nueva_coleccion`) | `Producto` |
+| `producto_promocion` | 6 | ✅ Reutilizada (pivot producto ↔ promoción) | — (relación M:M) |
+| `promocion` | 3 | ✅ Reutilizada sin cambios | `Promocion` |
+| `usuario` | 15 | ✅ Adaptada (+`email_verified_at`, +`remember_token`, +`rol_nuevo`) | `User` |
+| `venta` | 4 | ✅ Reutilizada sin cambios | `Venta` |
 
-### `usuario` — ADAPTAR
-- Campo `rol` es `varchar(20)` con valores libres → migrar a `role_id` FK
-- Falta: `email_verified_at`, `remember_token` (requeridos por Laravel Auth)
-- Nombres de columnas en español → Laravel usa `users` en inglés por defecto
-- **Decisión:** Crear tabla `users` de Laravel y migrar datos de `usuario`, o renombrar y adaptar
+### Adaptaciones realizadas
 
-### `producto` — AJUSTAR columnas
-- `talla` es `varchar(50)` (puede tener "S,M,L" como string) → normalizar a tabla `talla` + pivot
-- `imagen_url` es solo una URL → el nuevo sistema necesita múltiples imágenes (nueva tabla `producto_imagen`)
-- Falta columna: `destacado` (boolean) para home
+#### `usuario`
+- **Agregadas:** `email_verified_at` (timestamp nullable), `remember_token` (varchar 100 nullable), `rol_nuevo` (varchar referenciando slug de rol)
+- **Mantenidas:** `id`, `ci`, `nombre`, `apellido`, `email`, `telefono`, `password`, `activo`
+- **Depreciada:** columna `rol` original (varchar libre) → reemplazada por `rol_nuevo`
+- Laravel usa `$table = 'usuario'` en el modelo `User.php`
 
-### `inventario` — REVISAR
-- Tiene `tipo` (varchar 10), `tecnica` (varchar 20) → posiblemente para métodos de valuación (FIFO/PROMEDIO)
-- Se puede reutilizar tal como está
+#### `producto`
+- **Agregadas:** `destacado` (boolean, default false), `es_nueva_coleccion` (boolean, default false)
+- **Mantenidas:** `id`, `categoria_id`, `nombre`, `descripcion`, `precio_unitario`, `talla`, `imagen_url`, `qr_code`, `stock_actual`, `activo`
 
-### `pago` — EXTENDER
-- Agregar: `stripe_payment_intent_id`, `stripe_status`, `metodo` (tarjeta/transferencia)
-- `venta_id` ya existe como FK
+---
 
-## Resumen de lo que NO HAY QUE CREAR desde cero
+## Tablas nuevas creadas (8)
 
-Las siguientes tablas tienen datos reales y se reutilizan directamente:
-- `catalogo`, `catalogo_producto`, `categoria`
-- `producto` (con ajustes menores)
-- `pedido`, `detalle_pedido`, `venta`
-- `pago`, `cuota`
-- `inventario`
-- `promocion`, `producto_promocion`
-- `usuario` (con migración del campo rol)
+| Tabla | Filas | Propósito | Migración |
+|---|---|---|---|
+| `roles` | 4 | Roles normalizados con nivel numérico | `100001_create_roles_table` |
+| `talla` | 21 | Catálogo de tallas (adulto, niño, calzado) | `100004_create_talla_table` |
+| `producto_talla` | — | Pivot producto ↔ talla con stock por talla | `100005_create_producto_talla_table` |
+| `producto_imagen` | — | Múltiples imágenes por producto (url, orden, principal) | `100006_create_producto_imagen_table` |
+| `carrito_item` | — | Carrito persistente por usuario | `100007_create_carrito_item_table` |
+| `favorito` | — | Productos favoritos por usuario (UNIQUE usuario+producto) | `100008_create_favorito_table` |
+| `menu_item` | 15 | Menú dinámico con jerarquía padre-hijo y nivel mínimo | `100009_create_menu_item_table` |
+| `page_visit` | — | Contador de visitas por URL (UNIQUE page_url) | `100010_create_page_visit_table` |
+| `metodo_pago_usuario` | 0 | Métodos de pago Stripe (preparada, vacía) | `100011_create_metodo_pago_usuario_table` |
+
+---
+
+## Estructura de tabla `roles`
+
+| slug | nombre | nivel |
+|------|--------|-------|
+| `admin` | Administrador | 4 |
+| `propietario` | Propietario | 3 |
+| `vendedor` | Vendedor | 2 |
+| `cliente` | Cliente | 1 |
+
+---
+
+## Estructura de tabla `menu_item` (15 ítems)
+
+| ID | Label | Ruta | Nivel mín | Parent |
+|----|-------|------|-----------|--------|
+| 1 | Inicio | `home` | 0 | — |
+| 2 | Catálogo | `catalogo` | 0 | — |
+| 3 | Promociones | `promociones` | 0 | — |
+| 4 | Mi Carrito | `carrito` | 1 | — |
+| 5 | Favoritos | `favoritos` | 1 | — |
+| 6 | Mis Pedidos | `pedidos.historial` | 1 | — |
+| 7 | Gestión | — (padre) | 2 | — |
+| 8 | Reportes | `admin.reportes` | 3 | — |
+| 9 | Sistema | — (padre) | 4 | — |
+| 10 | Productos | `admin.productos.index` | 2 | 7 |
+| 11 | Inventario | `admin.inventario.index` | 2 | 7 |
+| 12 | Pedidos | `admin.pedidos.index` | 2 | 7 |
+| 13 | Usuarios | `admin.usuarios.index` | 3 | 7 |
+| 14 | Menú Dinámico | `admin.menu.index` | 4 | 9 |
+| 15 | Estadísticas | `admin.estadisticas` | 4 | 9 |
+
+---
+
+## Pendiente para tabla `pago` (Fase 13 – Stripe)
+
+```
+AGREGAR:  stripe_payment_intent_id (varchar, nullable)
+AGREGAR:  stripe_status (varchar, nullable)
+AGREGAR:  metodo (varchar: tarjeta/transferencia, nullable)
+```

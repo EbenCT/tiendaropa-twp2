@@ -1,400 +1,281 @@
 # Proyecto Final – Tienda de Ropa (INF-513 Tecnología Web)
 
-**Stack:** Laravel 11 · Inertia.js · Vue 3 · PostgreSQL · CSS Vanilla (3 temas)  
+**Stack:** Laravel 9 · Inertia.js v1.3 · Vue 3.5 · PostgreSQL · CSS Vanilla (3 temas)  
 **BD:** `db_grupo21sa` en `db.tecnoweb.org.bo:5432`  
 **Deploy:** `https://www.tecnoweb.org.bo/inf513/grupoXXsa/proyecto2`  
 **Entrega:** 30 de junio de 2026
 
 ---
 
+## Versiones exactas del stack
+
+| Componente | Versión |
+|---|---|
+| PHP | ^8.0 |
+| Laravel Framework | ^9.0 |
+| inertiajs/inertia-laravel (server) | ^1.3 |
+| @inertiajs/vue3 (client) | ^1.3.0 |
+| Vue | ^3.5.38 |
+| Vite | ^8.0.16 |
+| @vitejs/plugin-vue | ^6.0.7 |
+| laravel-vite-plugin | ^3.1.0 |
+| tightenco/ziggy | ^1.8 |
+| PostgreSQL (remoto) | db.tecnoweb.org.bo:5432 |
+
+---
+
 ## Resumen
 
-Sistema de e-commerce de ropa (hombre, mujer, niños) sobre una BD existente del proyecto Java anterior. **No se elimina la BD** — se adapta con migraciones quirúrgicas. Arquitectura Laravel 11 + Inertia + Vue 3, menú y vistas 100% dinámicos por rol, 3 temas visuales diferenciados + día/noche automático con override manual, buscador global siempre visible con filtrado por rol, contador de visitas en tabla propia, estadísticas, reportes y Stripe al final.
+Sistema de e-commerce de ropa (hombre, mujer, niños) sobre una BD existente del proyecto Java anterior. **No se elimina la BD** — se adapta con migraciones aditivas. Arquitectura Laravel 9 + Inertia v1 + Vue 3, menú y vistas 100% dinámicos por rol, 3 temas visuales diferenciados + día/noche automático con override manual, buscador global siempre visible con filtrado por rol, contador de visitas en tabla propia, estadísticas y reportes.
 
 ---
 
-## Jerarquía de Roles
+## Jerarquía de Roles (4 niveles)
 
-| Rol | Permisos |
-|-----|----------|
-| **Administrador** | Control total. Único que puede crear Propietarios. |
-| **Propietario** | Todo lo del Admin excepto crear Propietarios. |
-| **Vendedor** | Todo lo del Propietario excepto reportes y gestionar Vendedores. |
-| **Cliente** | Catálogo público + carrito, favoritos, pedidos propios, historial, pagos. |
+| Nivel | Rol | Permisos |
+|-------|-----|----------|
+| 4 | **Administrador** | Control total. Único que puede gestionar el menú dinámico. |
+| 3 | **Propietario** | Todo lo del Admin excepto menú. Gestiona usuarios, reportes y estadísticas. |
+| 2 | **Vendedor** | Gestión de productos, inventario, pedidos. |
+| 1 | **Cliente** | Catálogo público + carrito, favoritos, pedidos propios, historial. |
+| 0 | **Invitado** | Solo rutas públicas: home, catálogo, búsqueda, login/registro. |
 
-> El menú y las opciones visibles en cada vista se generan **dinámicamente** según el rol activo.
+> El menú y las opciones visibles en cada vista se generan **dinámicamente** según el nivel de rol activo.
 
 ---
 
-## Estado Real de la Base de Datos
+## Base de Datos
 
-> [!NOTE]
-> La BD fue inspeccionada. Tiene **13 tablas con datos reales** del proyecto Java.  
 > **Estrategia: cero eliminaciones, solo migraciones aditivas.**
 
-### Tablas que se reutilizan sin cambios
+### Tablas originales (13 tablas del proyecto Java)
 
-| Tabla | Filas | Descripción |
-|-------|-------|-------------|
-| `catalogo` | 3 | Secciones: hombre, mujer, niños |
-| `catalogo_producto` | 11 | Pivot catálogo ↔ producto |
-| `categoria` | 15 | Subcategorías de productos |
-| `detalle_pedido` | 16 | Líneas de cada pedido |
-| `inventario` | 12 | Movimientos de stock (entrada/salida, técnica FIFO/Promedio) |
-| `pedido` | 6 | Pedidos con dirección, teléfono, estado, referencia |
-| `venta` | 4 | Venta vinculada a pedido y usuario |
-| `cuota` | 7 | Cuotas de plan de pagos |
-| `promocion` | 3 | Promociones con % descuento y fechas |
-| `producto_promocion` | 6 | Pivot producto ↔ promoción |
+| Tabla | Filas | Estado |
+|-------|-------|--------|
+| `catalogo` | 3 | ✅ Reutilizada |
+| `catalogo_producto` | 11 | ✅ Reutilizada |
+| `categoria` | 15 | ✅ Reutilizada |
+| `cuota` | 7 | ✅ Reutilizada |
+| `detalle_pedido` | 16 | ✅ Reutilizada |
+| `inventario` | 12 | ✅ Reutilizada |
+| `pago` | 4 | ✅ Reutilizada (Stripe pendiente) |
+| `pedido` | 6 | ✅ Reutilizada |
+| `producto` | 20 | ✅ Adaptada (columnas `destacado`, `es_nueva_coleccion`) |
+| `producto_promocion` | 6 | ✅ Reutilizada |
+| `promocion` | 3 | ✅ Reutilizada |
+| `usuario` | 15 | ✅ Adaptada (columnas auth + `rol_nuevo`) |
+| `venta` | 4 | ✅ Reutilizada |
 
-### Tablas que se adaptan (migraciones aditivas)
+### Tablas nuevas creadas (8 tablas)
 
-#### `usuario` → adaptar para Laravel Auth
-```
-AGREGAR:  email_verified_at (timestamp, nullable)
-AGREGAR:  remember_token (varchar 100, nullable)
-AGREGAR:  role_id (integer FK → roles)
-MANTENER: ci, nombre, apellido, email, telefono, password, activo
-DEPRECAR: campo rol (varchar libre) → reemplazado por role_id
-```
-> Laravel trabajará con esta tabla renombrada a `users` mediante `$table = 'usuario'` en el modelo.
+| Tabla | Propósito | Migración |
+|---|---|---|
+| `roles` | 4 roles normalizados con nivel | `100001_create_roles_table` |
+| `talla` | Catálogo de tallas (21 registros) | `100004_create_talla_table` |
+| `producto_talla` | Pivot producto ↔ talla con stock | `100005_create_producto_talla_table` |
+| `producto_imagen` | Múltiples imágenes por producto | `100006_create_producto_imagen_table` |
+| `carrito_item` | Carrito persistente por usuario | `100007_create_carrito_item_table` |
+| `favorito` | Productos favoritos por usuario | `100008_create_favorito_table` |
+| `menu_item` | Menú dinámico filtrado por rol (15 ítems) | `100009_create_menu_item_table` |
+| `page_visit` | Contador de visitas por URL | `100010_create_page_visit_table` |
+| `metodo_pago_usuario` | Métodos de pago (Stripe, futuro) | `100011_create_metodo_pago_usuario_table` |
 
-#### `producto` → agregar columnas faltantes
-```
-AGREGAR:  destacado (boolean, default false)
-AGREGAR:  es_nueva_coleccion (boolean, default false)
-MANTENER: id, categoria_id, nombre, descripcion, precio_unitario,
-          talla(*), imagen_url(*), qr_code, stock_actual, activo
-```
-> `talla` e `imagen_url` quedan como respaldo; las nuevas tablas normalizadas las complementan.
+### Seeders ejecutados
 
-#### `pago` → agregar columnas Stripe (Fase final)
-```
-AGREGAR:  stripe_payment_intent_id (varchar, nullable)
-AGREGAR:  stripe_status (varchar, nullable)
-AGREGAR:  metodo (varchar: tarjeta/transferencia, nullable)
-MANTENER: id, venta_id, modalidad, monto_total, num_cuotas, fecha_pago, activo
-```
-
-### Tablas nuevas a crear
-
-| Tabla nueva | Propósito |
-|-------------|-----------|
-| `roles` | 4 roles normalizados: admin, propietario, vendedor, cliente |
-| `talla` | Catálogo de tallas (XS, S, M, L, XL, XXL, 6, 8, 10…) |
-| `producto_talla` | Pivot producto ↔ talla con `stock` por talla |
-| `producto_imagen` | Múltiples imágenes por producto (url, orden, principal) |
-| `carrito_item` | Carrito persistente en BD por usuario |
-| `favorito` | Productos favoritos por usuario |
-| `menu_item` | Menú dinámico: label, route, ícono, rol_minimo, orden, activo |
-| `page_visit` | Contador de visitas: page_url, page_name, visit_count, last_visited_at |
-| `metodo_pago_usuario` | Métodos de pago guardados (Stripe customer_id, last4, brand) |
+| Seeder | Datos |
+|---|---|
+| `RolSeeder` | 4 roles: admin(4), propietario(3), vendedor(2), cliente(1) |
+| `TallaSeeder` | 21 tallas (adulto XS-XXL, niño 2-14, calzado) |
+| `MenuItemSeeder` | 15 ítems de menú con niveles y jerarquía padre-hijo |
+| `AsignarRolesUsuariosSeeder` | Asigna `rol_nuevo` a los 15 usuarios existentes |
 
 ---
 
-## Estructura de Tablas Nuevas
+## Estructura del Proyecto
 
-### `roles`
-```sql
-id, slug (admin|propietario|vendedor|cliente), nombre, nivel (int),
-created_at, updated_at
-```
-
-### `talla`
-```sql
-id, codigo (S|M|L|XL|6|8|10…), descripcion, tipo (ropa_adulto|ropa_nino|calzado),
-created_at, updated_at
-```
-
-### `producto_talla` (pivot)
-```sql
-id, producto_id FK, talla_id FK, stock (int default 0),
-created_at, updated_at
-```
-
-### `producto_imagen`
-```sql
-id, producto_id FK, url (varchar 500), es_principal (bool default false),
-orden (int default 0), created_at, updated_at
-```
-
-### `carrito_item`
-```sql
-id, usuario_id FK, producto_id FK, talla_id FK (nullable),
-cantidad (int), created_at, updated_at
-```
-
-### `favorito`
-```sql
-id, usuario_id FK, producto_id FK,
-created_at, updated_at
-UNIQUE(usuario_id, producto_id)
-```
-
-### `menu_item`
-```sql
-id, label (varchar), route_name (varchar), icon (varchar nullable),
-role_nivel_minimo (int),  -- nivel mínimo de rol para ver este ítem
-parent_id (int nullable, FK self), orden (int), activo (bool),
-created_at, updated_at
-```
-
-### `page_visit`
-```sql
-id, page_url (varchar 500), page_name (varchar 200),
-visit_count (bigint default 0), last_visited_at (timestamp),
-created_at, updated_at
-UNIQUE(page_url)
-```
-
-### `metodo_pago_usuario`
-```sql
-id, usuario_id FK, stripe_customer_id, stripe_pm_id,
-brand (visa|mastercard…), last4 (char 4), es_principal (bool),
-activo (bool), created_at, updated_at
-```
-
----
-
-## Estructura de Carpetas
+### Backend – Controladores (17 controladores)
 
 ```
-proyecto/
-├── app/
-│   ├── Http/
-│   │   ├── Controllers/
-│   │   │   ├── Auth/
-│   │   │   ├── Public/         ← Catálogo, home, búsqueda pública
-│   │   │   ├── Cliente/        ← Carrito, favoritos, pedidos, pagos
-│   │   │   ├── Vendedor/       ← Productos, inventario, pedidos
-│   │   │   └── Admin/          ← Todo + reportes, menú, usuarios, temas
-│   │   ├── Middleware/
-│   │   │   ├── CheckRole.php
-│   │   │   └── TrackPageVisit.php
-│   │   └── Requests/           ← FormRequests, mensajes en español
-│   └── Models/
-│       ├── User.php            ← tabla 'usuario'
-│       ├── Role.php
-│       ├── Producto.php
-│       ├── Talla.php
-│       ├── Categoria.php
-│       ├── Catalogo.php
-│       ├── Pedido.php
-│       ├── DetallePedido.php
-│       ├── Venta.php
-│       ├── Pago.php
-│       ├── Cuota.php
-│       ├── Inventario.php
-│       ├── Promocion.php
-│       ├── CarritoItem.php
-│       ├── Favorito.php
-│       ├── MenuItem.php
-│       ├── PageVisit.php
-│       └── MetodoPagoUsuario.php
-├── database/
-│   ├── migrations/             ← SOLO para tablas nuevas y columnas añadidas
-│   └── seeders/
-│       ├── RolSeeder.php
-│       ├── TallaSeeder.php
-│       ├── MenuItemSeeder.php
-│       └── PageVisitSeeder.php
-├── resources/
-│   ├── css/app.css             ← Variables CSS, 3 temas, día/noche, accesibilidad
-│   └── js/
-│       ├── app.js
-│       ├── Layouts/
-│       │   └── AppLayout.vue
-│       ├── Pages/
-│       │   ├── Home/Index.vue
-│       │   ├── Catalogo/Index.vue
-│       │   ├── Catalogo/Show.vue
-│       │   ├── Carrito/Index.vue
-│       │   ├── Favoritos/Index.vue
-│       │   ├── Pedidos/Create.vue
-│       │   ├── Pedidos/Historial.vue
-│       │   ├── Pagos/Checkout.vue
-│       │   └── Admin/
-│       │       ├── Productos/
-│       │       ├── Inventario/
-│       │       ├── Pedidos/
-│       │       ├── Usuarios/
-│       │       ├── Menu/
-│       │       ├── Estadisticas/
-│       │       └── Reportes/
-│       └── composables/
-│           ├── useTema.js
-│           └── useBuscador.js
-└── routes/web.php
+app/Http/Controllers/
+├── Auth/
+│   ├── LoginController.php          ← Login + Logout
+│   └── RegisterController.php       ← Registro de clientes
+├── Cliente/
+│   ├── CarritoController.php        ← CRUD carrito (index, agregar, actualizar, eliminar)
+│   ├── FavoritoController.php       ← Toggle favoritos + listado
+│   └── PedidoController.php         ← Crear pedido, historial, detalle
+├── Admin/
+│   ├── ProductoAdminController.php  ← CRUD completo productos
+│   ├── InventarioController.php     ← Listar + registrar movimientos stock
+│   ├── PedidoAdminController.php    ← Listar pedidos + cambiar estado
+│   ├── UsuarioAdminController.php   ← CRUD usuarios con restricción por nivel
+│   ├── MenuAdminController.php      ← CRUD menú dinámico + cache invalidation
+│   ├── DestacadoController.php      ← Toggle destacado/nueva colección
+│   ├── EstadisticaController.php    ← Dashboard estadísticas
+│   └── ReporteController.php        ← Ventas por mes, ganancias
+├── HomeController.php               ← Home: destacados, nueva colección, promociones
+├── CatalogoController.php           ← Listado filtrado + detalle producto
+├── BuscadorController.php           ← Búsqueda global filtrada por rol
+└── Controller.php                   ← Base
+```
+
+### Backend – Modelos Eloquent (20 modelos)
+
+```
+app/Models/
+├── User.php              ← tabla 'usuario', auth Laravel
+├── Role.php              ← tabla 'roles'
+├── Producto.php          ← con relaciones a categoría, catálogos, tallas, imágenes, promociones
+├── Categoria.php
+├── Catalogo.php
+├── Talla.php
+├── ProductoTalla.php
+├── ProductoImagen.php
+├── CarritoItem.php
+├── Favorito.php
+├── Pedido.php
+├── DetallePedido.php
+├── Venta.php
+├── Pago.php
+├── Cuota.php
+├── Inventario.php
+├── Promocion.php
+├── MenuItem.php          ← con relación self-referencial (children)
+├── PageVisit.php
+└── MetodoPagoUsuario.php
+```
+
+### Backend – Middleware personalizado
+
+| Middleware | Función |
+|---|---|
+| `CheckRole` | Verifica `rol_nuevo` del usuario contra nivel mínimo requerido |
+| `TrackPageVisit` | Upsert en `page_visit` por cada request GET |
+| `HandleInertiaRequests` | Comparte datos globales: auth, menu, pageVisits, flash |
+
+### Frontend – Vistas Vue (21 páginas + 1 layout + 1 componente + 1 composable)
+
+```
+resources/js/
+├── app.js                           ← Punto de entrada Inertia
+├── Layouts/
+│   └── AppLayout.vue                ← Header + footer + menú dinámico + buscador + temas
+├── Components/
+│   └── ProductoCard.vue             ← Tarjeta de producto reutilizable
+├── composables/
+│   └── useTema.js                   ← Gestión de temas, modo día/noche, accesibilidad
+└── Pages/
+    ├── Home/Index.vue               ← Hero + destacados + nueva colección + promociones
+    ├── Auth/Login.vue               ← Formulario login
+    ├── Auth/Register.vue            ← Formulario registro
+    ├── Catalogo/Index.vue           ← Grid productos + filtros + paginación
+    ├── Catalogo/Show.vue            ← Detalle producto + galería + tallas + métricas
+    ├── Carrito/Index.vue            ← Ítems + cantidades + subtotales + resumen
+    ├── Favoritos/Index.vue          ← Grid favoritos + agregar al carrito
+    ├── Pedidos/Create.vue           ← Formulario de envío + resumen
+    ├── Pedidos/Historial.vue        ← Lista paginada con estados
+    ├── Pedidos/Show.vue             ← Detalle del pedido
+    ├── Admin/Productos/Index.vue    ← Tabla + filtros + acciones
+    ├── Admin/Productos/Form.vue     ← Crear/editar + tallas + catálogos
+    ├── Admin/Inventario/Index.vue   ← Movimientos de stock
+    ├── Admin/Inventario/Create.vue  ← Registrar movimiento
+    ├── Admin/Pedidos/Index.vue      ← Todos los pedidos + cambio estado inline
+    ├── Admin/Pedidos/Show.vue       ← Detalle completo del pedido
+    ├── Admin/Usuarios/Index.vue     ← Tabla usuarios + filtros
+    ├── Admin/Usuarios/Form.vue      ← Crear/editar con roles
+    ├── Admin/Menu/Index.vue         ← Árbol de menú dinámico
+    ├── Admin/Estadisticas/Index.vue ← Dashboard con barras CSS
+    └── Admin/Reportes/Index.vue     ← Gráfico barras mensuales + resumen anual
+```
+
+### Estilos – Sistema de Temas CSS
+
+```
+resources/css/app.css  (390 líneas)
+```
+
+| Tema | Clase | Paleta | Tipografía |
+|------|-------|--------|------------|
+| Niños | `.tema-ninos` | Coral, turquesa, amarillo vibrante | Nunito (redondeada) |
+| Jóvenes | `.tema-jovenes` | Negro, violeta neón, cian eléctrico | Orbitron + Poppins |
+| Adultos | `.tema-adultos` | Crema, gris carbón, dorado | Playfair Display + Poppins |
+
+- Variantes `.modo-dia` / `.modo-noche` por cada tema (6 combinaciones)
+- Detección automática por hora del cliente (7:00–19:00 = día)
+- Override manual con persistencia en `localStorage`
+- Accesibilidad: botones A-/A/A+ para escala de fuente (0.8x–1.4x)
+
+### Rutas (45+ rutas en web.php)
+
+| Grupo | Prefijo | Middleware | Rutas |
+|-------|---------|-----------|-------|
+| Públicas | `/` | ninguno | home, catalogo, promociones, catalogo/{id}, buscar |
+| Auth (guest) | `/` | `guest` | login (GET/POST), registro (GET/POST) |
+| Auth (logout) | `/` | `auth` | logout (POST) |
+| Cliente | `/carrito`, `/favoritos`, `/pedidos` | `auth` | 9 rutas |
+| Vendedor+ | `/admin` | `auth, role:vendedor` | productos (resource), inventario, pedidos admin, destacados |
+| Propietario+ | `/admin` | `auth, role:propietario` | usuarios (resource), reportes, estadísticas |
+| Admin | `/admin` | `auth, role:admin` | menu (resource) |
+
+---
+
+## Estado de las Fases
+
+| Fase | Descripción | Estado |
+|------|-------------|--------|
+| 1 | Setup Laravel + Inertia + Vue + PostgreSQL | ✅ Completa |
+| 2 | Modelos Eloquent + Migraciones aditivas + Seeders | ✅ Completa |
+| 3 | Autenticación y Roles | ✅ Completa |
+| 4 | Middleware Visitas + Inertia Global | ✅ Completa |
+| 5 | Layout Global y Sistema de Temas | ✅ Completa |
+| 6 | Home y Destacados | ✅ Completa |
+| 7 | Catálogo, Filtros y Búsqueda Global | ✅ Completa |
+| 8 | Carrito de Compras | ✅ Completa |
+| 9 | Favoritos | ✅ Completa |
+| 10 | Pedidos (cliente + admin) | ✅ Completa |
+| 11 | Gestión Admin (productos, inventario, menú, usuarios) | ✅ Completa |
+| 12 | Estadísticas y Reportes | ✅ Completa |
+| 13 | Pagos con Stripe | ⏸️ Pendiente |
+
+---
+
+## Pendiente – Fase 13: Pagos con Stripe
+
+- Instalar `stripe/stripe-php` + `@stripe/stripe-js`
+- `PagoController` (pago único + plan de cuotas)
+- Migración aditiva en tabla `pago` (stripe_payment_intent_id, stripe_status, metodo)
+- `Pagos/Checkout.vue` con Stripe Elements
+- Webhooks Stripe para confirmar pagos asíncronos
+- Tabla `metodo_pago_usuario` ya existe en BD (vacía)
+
+---
+
+## Cómo levantar el proyecto
+
+```bash
+# 1. Instalar dependencias
+composer install
+npm install
+
+# 2. Configurar .env (ya configurado con PostgreSQL remoto)
+cp .env.example .env
+php artisan key:generate
+
+# 3. Ejecutar migraciones y seeders
+php artisan migrate
+php artisan db:seed
+
+# 4. Levantar servidores de desarrollo
+php artisan serve          # → http://127.0.0.1:8000
+npm run dev                # → Vite HMR en puerto 5173
 ```
 
 ---
 
-## Plan de Ejecución por Fases
+## Deploy en producción
 
-### 🔴 FASE 1 – Setup del Proyecto Laravel
-- `composer create-project laravel/laravel .` en directorio del proyecto
-- Instalar Inertia server-side: `composer require inertiajs/inertia-laravel`
-- Instalar Inertia client + Vue 3: `npm install @inertiajs/vue3 vue @vitejs/plugin-vue`
-- Configurar `vite.config.js` con plugin Vue
-- Configurar `.env` con las credenciales PostgreSQL
-- Verificar conexión a `db.tecnoweb.org.bo`
-
----
-
-### 🔴 FASE 2 – Modelos Eloquent + Migraciones (solo aditivas)
-
-**Migraciones a crear:**
-1. `create_roles_table`
-2. `add_auth_columns_to_usuario_table` (email_verified_at, remember_token, role_id)
-3. `add_destacado_to_producto_table` (destacado, es_nueva_coleccion)
-4. `create_talla_table`
-5. `create_producto_talla_table`
-6. `create_producto_imagen_table`
-7. `create_carrito_item_table`
-8. `create_favorito_table`
-9. `create_menu_item_table`
-10. `create_page_visit_table`
-11. `create_metodo_pago_usuario_table`
-12. `add_stripe_columns_to_pago_table` *(Fase 13, Stripe)*
-
-**Seeders:**
-- `RolSeeder` → 4 roles con niveles (admin=4, propietario=3, vendedor=2, cliente=1)
-- `TallaSeeder` → tallas adulto (XS-XXL), niño (2-14), calzado
-- `MenuItemSeeder` → menú inicial con nivel de acceso por ítem
-- Asignar `role_id` a los 15 usuarios existentes en `usuario`
-
-**Modelos Eloquent:** un modelo por cada tabla, con `$table` explícito para las tablas en español.
-
----
-
-### 🔴 FASE 3 – Autenticación y Roles
-- Controladores `Auth/LoginController`, `Auth/RegisterController`
-- Usar tabla `usuario` existente (`$table = 'usuario'` en `User.php`)
-- Middleware `CheckRole` que verifica `role.nivel >= nivel_requerido`
-- Métodos en `User`: `hasRole()`, `canAccess(nivel)`
-- Grupos de rutas en `web.php`:
-  - Público: home, catálogo, búsqueda
-  - `auth + cliente`: carrito, favoritos, pedidos, pagos
-  - `auth + vendedor`: gestión productos, inventario, pedidos
-  - `auth + propietario`: vendedores + todo lo anterior
-  - `auth + admin`: propietarios + reportes + menú + temas
-
----
-
-### 🔴 FASE 4 – Middleware de Visitas + Inertia Global
-- `TrackPageVisit`: hace `upsert` en `page_visit` por cada request GET
-- `HandleInertiaRequests` comparte:
-  - `auth.user` + rol
-  - `menu` → ítems de `menu_item` filtrados por `role_nivel_minimo <= user.role.nivel`
-  - `pageVisits` → count de la URL actual
-  - `temaActivo` → desde cookie/sesión
-
----
-
-### 🔴 FASE 5 – Layout Global y Sistema de Temas
-- `AppLayout.vue`: header (logo + buscador global + menú dinámico + carrito badge + usuario) + footer (contador de visitas)
-- `app.css` con 3 temas aplicados como clases en `<body>`:
-
-| Tema | Paleta | Tipografía | Estilo |
-|------|--------|------------|--------|
-| `.tema-ninos` | Colores vibrantes (coral, turquesa, amarillo) | Redondeada, grande | Lúdico, ilustrativo |
-| `.tema-jovenes` | Oscuro con neón (negro, violeta, cian) | Sans-serif bold | Moderno, urbano |
-| `.tema-adultos` | Neutros elegantes (crema, gris, dorado) | Serif refinada | Clásico, premium |
-
-- Variantes `.modo-dia` / `.modo-noche` aplicadas sobre el tema
-- `useTema.js`: detecta hora del cliente → aplica día/noche automático, permite override manual → guarda en `localStorage`
-- Controles accesibilidad: botones `A-` / `A` / `A+` para tamaño de fuente + toggle de alto contraste
-
----
-
-### 🟠 FASE 6 – Home y Destacados
-- `HomeController`: consulta `producto WHERE destacado = true`, `producto WHERE es_nueva_coleccion = true`, promociones activas
-- `Home/Index.vue`: secciones dinámicas con carrusel de destacados, grid de nuevas colecciones, banner de promociones
-- Admin puede gestionar qué productos van en cada sección
-
----
-
-### 🟠 FASE 7 – Catálogo, Filtros y Búsqueda Global
-- `CatalogoController`: listado paginado con filtros (catálogo/categoría, talla, rango precio, búsqueda por nombre)
-- `Catalogo/Show.vue`: múltiples imágenes desde `producto_imagen`, tallas disponibles desde `producto_talla`, descripción, stock, métricas de ventas (unidades vendidas desde `detalle_pedido`)
-- `BuscadorController`: busca en productos, categorías, funcionalidades del sistema → filtra resultados por `role.nivel` del usuario activo
-- Buscador siempre en header → dropdown con resultados agrupados por tipo
-
----
-
-### 🟠 FASE 8 – Carrito de Compras
-- `CarritoController`: agregar (con talla), modificar cantidad, eliminar ítem, ver resumen + total
-- Carrito en tabla `carrito_item` (persistente entre sesiones)
-- `Carrito/Index.vue` con actualización reactiva
-
----
-
-### 🟠 FASE 9 – Favoritos
-- `FavoritoController`: toggle (insert/delete en `favorito`), solo clientes autenticados
-- `Favoritos/Index.vue`: grid de productos favoritos con acceso rápido al carrito
-
----
-
-### 🟠 FASE 10 – Pedidos
-- `PedidoController` (cliente): crear pedido desde carrito → tabla `pedido` + `detalle_pedido` + `venta`
-- Ingresar dirección, teléfono, referencia
-- `PedidoAdminController` (vendedor+): listar todos los pedidos, cambiar estado
-- `Pedidos/Create.vue`, `Pedidos/Historial.vue`, `Admin/Pedidos/Index.vue`
-- Estados: `PENDIENTE` → `CONFIRMADO` → `ENVIADO` → `ENTREGADO`
-
----
-
-### 🟠 FASE 11 – Gestión Admin (Productos, Inventario, Menú, Usuarios)
-- `ProductoAdminController`: CRUD completo, upload múltiples imágenes a Storage, gestión tallas/stock por talla
-- `InventarioController`: registrar movimientos de entrada/salida de stock con técnica (FIFO/Promedio)
-- `MenuAdminController`: CRUD de `menu_item` con drag-and-drop de orden
-- `UsuarioAdminController`:
-  - Admin crea/gestiona Propietarios
-  - Propietario crea/gestiona Vendedores
-- `DestacadoController`: marcar productos como destacados / nueva colección / en promoción
-
----
-
-### 🟡 FASE 12 – Estadísticas y Reportes
-- `EstadisticaController`: productos más vendidos (sum de `detalle_pedido.cantidad`), visitas por página (desde `page_visit`), pedidos por estado
-- `ReporteController` (Admin + Propietario): ventas filtradas por mes, ganancias del período, exportable
-- Gráficas con **Chart.js** via npm
-- `Admin/Estadisticas/Index.vue`, `Admin/Reportes/Index.vue`
-
----
-
-### 🟡 FASE 13 – Pagos con Stripe (última)
-- `composer require stripe/stripe-php`
-- `npm install @stripe/stripe-js`
-- `PagoController`: crear Payment Intent, confirmar pago único, crear plan de pagos (tabla `cuota`)
-- Agregar columnas Stripe a tabla `pago` (migración aditiva)
-- `metodo_pago_usuario`: guardar métodos del cliente (Stripe Customer + PaymentMethod)
-- `Pagos/Checkout.vue` con **Stripe Elements**
-- Webhooks para confirmar pagos asíncronos
-- Pago único y plan de cuotas (ya estructurado en BD con tabla `cuota`)
-
----
-
-## Validaciones (transversal a todas las fases)
-
-- Backend: **FormRequest** de Laravel con `messages()` en **español**
-- Frontend: validación en Vue antes de submit (errores inline en formulario)
-- Campos clave: registro, login, productos, pedidos, pagos, búsqueda, carrito
-
----
-
-## Verificación Final
-
-### Flujos completos a probar
-- Registro → login → catálogo → filtros → detalle producto → carrito → pedido → pago Stripe
-- Cambio de tema (3 temas) + modo día/noche + override manual + accesibilidad A-/A/A+
-- Acceso a rutas protegidas con cada uno de los 4 roles
-- Contador de visitas incrementando correctamente en footer
-- Buscador global retornando resultados filtrados por rol
-- Admin: CRUD productos con imágenes, gestión de menú dinámico, reportes por mes
-
-### Deploy
-- `npm run build` para producción
-- Configurar URL base para servidor de la cátedra (`APP_URL`)
-- Subir a `tecnoweb.org.bo/inf513/grupoXXsa/proyecto2`
-- Exportar BD con `pg_dump` para incluir en entrega final (`.tar.gz`)
+```bash
+npm run build              # Genera assets en public/build/
+# Configurar APP_URL en .env para tecnoweb.org.bo
+# Subir a: https://www.tecnoweb.org.bo/inf513/grupoXXsa/proyecto2
+```

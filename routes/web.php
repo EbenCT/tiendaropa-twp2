@@ -24,6 +24,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/',              [HomeController::class, 'index'])->name('home');
 Route::get('/catalogo',      [CatalogoController::class, 'index'])->name('catalogo');
+Route::get('/promociones',   [CatalogoController::class, 'index'])->name('promociones');
 Route::get('/catalogo/{id}', [CatalogoController::class, 'show'])->name('catalogo.show');
 Route::get('/buscar',        [BuscadorController::class, 'buscar'])->name('buscar');
 
