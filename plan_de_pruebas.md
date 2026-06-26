@@ -72,11 +72,11 @@ php artisan tinker --execute="echo App\Models\User::count();"
 
 | ID | Caso de prueba | Pasos | Resultado esperado | ✅/❌ |
 |----|---------------|-------|--------------------|----|
-| PR-01.1 | Levantar servidor Laravel | `php artisan serve` | Server running en `127.0.0.1:8000` | |
-| PR-01.2 | Levantar Vite | `npm run dev` | Vite server corriendo, HMR habilitado | |
-| PR-01.3 | Acceder al home | Navegar a `http://127.0.0.1:8000/` | Página renderiza con hero "Tu Estilo, Tu Manera" | |
-| PR-01.4 | Conexión BD | Verificar que hay datos en home (promociones) | Muestra al menos 1 promoción activa | |
-| PR-01.5 | Sin errores en consola | Abrir DevTools → Console | No hay errores JS (solo warnings de Vite ok) | |
+| PR-01.1 | Levantar servidor Laravel | `php artisan serve` | Server running en `127.0.0.1:8000` | ✅ |
+| PR-01.2 | Levantar Vite | `npm run dev` | Vite server corriendo, HMR habilitado | ✅ |
+| PR-01.3 | Acceder al home | Navegar a `http://127.0.0.1:8000/` | Página renderiza con hero "Tu Estilo, Tu Manera" | ✅ |
+| PR-01.4 | Conexión BD | Verificar que hay datos en home (promociones) | Muestra al menos 1 promoción activa | ✅ |
+| PR-01.5 | Sin errores en consola | Abrir DevTools → Console | No hay errores JS (solo warnings de Vite ok) | ✅ |
 
 ---
 
@@ -84,13 +84,13 @@ php artisan tinker --execute="echo App\Models\User::count();"
 
 | ID | Caso de prueba | Pasos | Resultado esperado | ✅/❌ |
 |----|---------------|-------|--------------------|----|
-| PR-02.1 | Ver formulario login | Navegar a `/login` | Muestra formulario con email y password | |
-| PR-02.2 | Login exitoso | Ingresar credenciales válidas → clic "Ingresar" | Redirige a home con flash "¡Bienvenido, [nombre]!" | |
+| PR-02.1 | Ver formulario login | Navegar a `/login` | Muestra formulario con email y password | ✅ |
+| PR-02.2 | Login exitoso | Ingresar credenciales válidas → clic "Ingresar" | Redirige a home con flash "¡Bienvenido, [nombre]!" | ❌ |
 | PR-02.3 | Login fallido | Ingresar credenciales inválidas → clic "Ingresar" | Muestra error "Las credenciales ingresadas no son correctas." | |
 | PR-02.4 | Login con campos vacíos | Dejar email y/o password vacíos → submit | Mensajes de validación en español | |
 | PR-02.5 | Logout | Clic en nombre usuario → "Cerrar Sesión" | Redirige a home con flash "Has cerrado sesión correctamente." | |
-| PR-02.6 | Ver formulario registro | Navegar a `/registro` | Muestra formulario completo de registro | |
-| PR-02.7 | Registro exitoso | Llenar todos los campos válidos → submit | Crea usuario como cliente, redirige a home con bienvenida | |
+| PR-02.6 | Ver formulario registro | Navegar a `/registro` | Muestra formulario completo de registro | ✅ |
+| PR-02.7 | Registro exitoso | Llenar todos los campos válidos → submit | Crea usuario como cliente, redirige a home con bienvenida | ❌ |
 | PR-02.8 | Registro con email duplicado | Usar email que ya existe | Error "El correo electrónico ya está registrado." | |
 | PR-02.9 | Acceso a login estando autenticado | Ya logueado, navegar a `/login` | Redirige a home (middleware guest) | |
 | PR-02.10 | Acceso a registro estando autenticado | Ya logueado, navegar a `/registro` | Redirige a home (middleware guest) | |
@@ -117,10 +117,10 @@ php artisan tinker --execute="echo App\Models\User::count();"
 
 | ID | Caso de prueba | Pasos | Resultado esperado | ✅/❌ |
 |----|---------------|-------|--------------------|----|
-| PR-04.1 | Tema por defecto (adultos) | Abrir home sin localStorage previo | Body tiene clase `tema-adultos`, paleta crema/dorado, tipografía Playfair | |
-| PR-04.2 | Cambiar a tema niños | Clic en botón circular coral/turquesa en header | Body cambia a `tema-ninos`, paleta vibrante, tipografía Nunito | |
-| PR-04.3 | Cambiar a tema jóvenes | Clic en botón circular violeta/cian en header | Body cambia a `tema-jovenes`, fondo oscuro, tipografía Orbitron | |
-| PR-04.4 | Cambiar a tema adultos | Clic en botón circular negro/dorado en header | Body cambia a `tema-adultos`, paleta elegante | |
+| PR-04.1 | Tema por defecto (adultos) | Abrir home sin localStorage previo | Body tiene clase `tema-adultos`, paleta crema/dorado, tipografía Playfair | ✅ |
+| PR-04.2 | Cambiar a tema niños | Clic en botón circular coral/turquesa en header | Body cambia a `tema-ninos`, paleta vibrante, tipografía Nunito | ✅ |
+| PR-04.3 | Cambiar a tema jóvenes | Clic en botón circular violeta/cian en header | Body cambia a `tema-jovenes`, fondo oscuro, tipografía Orbitron | ✅ |
+| PR-04.4 | Cambiar a tema adultos | Clic en botón circular negro/dorado en header | Body cambia a `tema-adultos`, paleta elegante | ✅ |
 | PR-04.5 | Persistencia del tema | Cambiar a tema niños → recargar página (F5) | Tema niños persiste (guardado en localStorage) | |
 | PR-04.6 | Tema afecta todas las páginas | Cambiar tema → navegar entre home, catálogo, login | Tema se mantiene consistente en todas las páginas | |
 | PR-04.7 | Variables CSS del tema niños | Inspeccionar con DevTools | `--color-primary: #FF6B6B`, `--font-body: Nunito` | |
@@ -134,10 +134,10 @@ php artisan tinker --execute="echo App\Models\User::count();"
 
 | ID | Caso de prueba | Pasos | Resultado esperado | ✅/❌ |
 |----|---------------|-------|--------------------|----|
-| PR-05.1 | Detección automática (día) | Acceder entre 7:00–19:00 sin localStorage previo | Body tiene `modo-dia`, fondos claros | |
-| PR-05.2 | Detección automática (noche) | Acceder entre 19:00–7:00 sin localStorage previo | Body tiene `modo-noche`, fondos oscuros | |
-| PR-05.3 | Toggle manual a noche | Clic en botón 🌙 en header | Cambia a `modo-noche`, ícono cambia a ☀️ | |
-| PR-05.4 | Toggle manual a día | Estando en noche, clic en botón ☀️ | Cambia a `modo-dia`, ícono cambia a 🌙 | |
+| PR-05.1 | Detección automática (día) | Acceder entre 7:00–19:00 sin localStorage previo | Body tiene `modo-dia`, fondos claros | ✅ |
+| PR-05.2 | Detección automática (noche) | Acceder entre 19:00–7:00 sin localStorage previo | Body tiene `modo-noche`, fondos oscuros | ✅ |
+| PR-05.3 | Toggle manual a noche | Clic en botón 🌙 en header | Cambia a `modo-noche`, ícono cambia a ☀️ | ✅ |
+| PR-05.4 | Toggle manual a día | Estando en noche, clic en botón ☀️ | Cambia a `modo-dia`, ícono cambia a 🌙 | ✅ |
 | PR-05.5 | Persistencia del modo | Cambiar a noche manual → recargar | Modo noche persiste (localStorage) | |
 | PR-05.6 | Modo noche + tema niños | Seleccionar tema niños + activar noche | Fondo oscuro `#1A0A0A`, textos claros `#FFE8E8` | |
 | PR-05.7 | Modo noche + tema jóvenes | Seleccionar tema jóvenes + activar noche | Fondo más oscuro `#050505`, textos `#E2E8F0` | |
@@ -212,7 +212,7 @@ php artisan tinker --execute="echo App\Models\User::count();"
 
 | ID | Caso de prueba | Pasos | Resultado esperado | ✅/❌ |
 |----|---------------|-------|--------------------|----|
-| PR-10.1 | Acceder al detalle | Clic en ProductoCard en catálogo | Navega a `/catalogo/{id}` | |
+| PR-10.1 | Acceder al detalle | Clic en ProductoCard en catálogo | Navega a `/catalogo/{id}` | ❌ |
 | PR-10.2 | Información mostrada | Ver página de detalle | Nombre, descripción, precio, stock, imagen | |
 | PR-10.3 | Tallas disponibles | Producto con tallas en `producto_talla` | Muestra selector de tallas | |
 | PR-10.4 | Métricas de ventas | Producto con ventas previas | Muestra unidades vendidas (desde `detalle_pedido`) | |
