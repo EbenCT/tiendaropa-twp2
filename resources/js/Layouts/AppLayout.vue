@@ -31,25 +31,25 @@
           <div v-if="mostrarResultados && (resultados.productos?.length || resultados.categorias?.length || resultados.acciones?.length)" class="buscador-dropdown slide-down">
             <div v-if="resultados.productos?.length">
               <p class="dropdown-label">Productos</p>
-              <a v-for="p in resultados.productos" :key="p.id" :href="p.url" class="dropdown-item" @click="limpiarBusqueda">
+              <Link v-for="p in resultados.productos" :key="p.id" :href="p.url" class="dropdown-item" @click="limpiarBusqueda">
                 <img v-if="p.imagen" :src="p.imagen" :alt="p.nombre" class="dropdown-img" />
                 <div>
                   <p class="dropdown-item-nombre">{{ p.nombre }}</p>
                   <p class="dropdown-item-precio">Bs. {{ p.precio }}</p>
                 </div>
-              </a>
+              </Link>
             </div>
             <div v-if="resultados.categorias?.length">
               <p class="dropdown-label">Categorías</p>
-              <a v-for="c in resultados.categorias" :key="c.id" :href="c.url" class="dropdown-item" @click="limpiarBusqueda">
+              <Link v-for="c in resultados.categorias" :key="c.id" :href="c.url" class="dropdown-item" @click="limpiarBusqueda">
                 <span>📂</span> {{ c.nombre }}
-              </a>
+              </Link>
             </div>
             <div v-if="resultados.acciones?.length">
               <p class="dropdown-label">Acciones del sistema</p>
-              <a v-for="a in resultados.acciones" :key="a.url" :href="a.url" class="dropdown-item" @click="limpiarBusqueda">
+              <Link v-for="a in resultados.acciones" :key="a.url" :href="a.url" class="dropdown-item" @click="limpiarBusqueda">
                 <span>⚙️</span> {{ a.label }}
-              </a>
+              </Link>
             </div>
           </div>
         </div>

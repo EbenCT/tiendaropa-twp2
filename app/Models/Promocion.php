@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Promocion extends Model
 {
     protected $table = 'promocion';
+    public $timestamps = false;
     protected $fillable = ['nombre', 'descripcion', 'descuento', 'fecha_inicio', 'fecha_fin', 'activo'];
     protected $casts = ['descuento' => 'decimal:2', 'activo' => 'boolean', 'fecha_inicio' => 'date', 'fecha_fin' => 'date'];
 

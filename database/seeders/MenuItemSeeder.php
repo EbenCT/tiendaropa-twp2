@@ -19,8 +19,8 @@ class MenuItemSeeder extends Seeder
             ['label' => 'Promociones', 'route_name' => 'promociones',  'icon' => 'tag',        'role_nivel_minimo' => 0, 'orden' => 3],
 
             // ── Cliente ───────────────────────────────────────────────
-            ['label' => 'Mi Carrito',  'route_name' => 'carrito',      'icon' => 'shopping-cart', 'role_nivel_minimo' => 1, 'orden' => 4],
-            ['label' => 'Favoritos',   'route_name' => 'favoritos',    'icon' => 'heart',         'role_nivel_minimo' => 1, 'orden' => 5],
+            ['label' => 'Mi Carrito',  'route_name' => 'carrito.index', 'icon' => 'shopping-cart', 'role_nivel_minimo' => 1, 'orden' => 4],
+            ['label' => 'Favoritos',   'route_name' => 'favoritos.index', 'icon' => 'heart',      'role_nivel_minimo' => 1, 'orden' => 5],
             ['label' => 'Mis Pedidos', 'route_name' => 'pedidos.historial', 'icon' => 'package', 'role_nivel_minimo' => 1, 'orden' => 6],
 
             // ── Vendedor ──────────────────────────────────────────────

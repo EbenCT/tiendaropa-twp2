@@ -37,8 +37,9 @@ class TallaSeeder extends Seeder
         ];
 
         foreach ($tallas as $t) {
-            DB::table('talla')->insertOrIgnore(
-                array_merge($t, ['created_at' => now(), 'updated_at' => now()])
+            DB::table('talla')->updateOrInsert(
+                ['codigo' => $t['codigo'], 'tipo' => $t['tipo']],
+                ['descripcion' => $t['descripcion'], 'created_at' => now(), 'updated_at' => now()]
             );
         }
     }
