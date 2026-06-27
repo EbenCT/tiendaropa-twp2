@@ -45,10 +45,19 @@ class InventarioController extends Controller
             'cantidad.min'         => 'La cantidad mínima es 1.',
         ]);
 
+        if ($request->tipo === 'salida') {
+            $stockDisponible = Producto::findOrFail($request->producto_id)->stock_actual;
+            if ($request->cantidad > $stockDisponible) {
+                return back()->withErrors([
+                    'cantidad' => "La cantidad de salida ({$request->cantidad}) supera el stock disponible ({$stockDisponible}).",
+                ]);
+            }
+        }
+
         Inventario::create([
             'producto_id' => $request->producto_id,
             'usuario_id'  => $request->user()->id,
-            'tipo'        => $request->tipo,
+            'tipo'        => $this->tipoLegado($request->tipo),
             'cantidad'    => $request->cantidad,
             'tecnica'     => $request->tecnica ?? 'PROMEDIO',
         ]);
@@ -63,5 +72,15 @@ class InventarioController extends Controller
 
         return redirect()->route('admin.inventario.index')
             ->with('success', 'Movimiento de inventario registrado.');
+    }
+
+    /**
+     * La columna heredada 'tipo' tiene un CHECK constraint que solo permite
+     * INGRESO/SALIDA (mayúsculas, en español), por lo que 'entrada'/'salida'
+     * deben mapearse a un valor permitido para no violar la BD.
+     */
+    private function tipoLegado(string $tipo): string
+    {
+        return $tipo === 'entrada' ? 'INGRESO' : 'SALIDA';
     }
 }

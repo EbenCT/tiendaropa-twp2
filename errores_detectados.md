@@ -106,6 +106,22 @@ Este archivo registra los errores detectados durante las pruebas MVP.
 * **Solución aplicada**: se cambió `orderByDesc('created_at')` por `orderByDesc('fecha')` en `app/Http/Controllers/Cliente/PedidoController.php` (método `historial`), `app/Http/Controllers/Admin/PedidoAdminController.php` (método `index`) y `app/Http/Controllers/Admin/InventarioController.php` (método `index`).
 * **Verificación**: con Playwright se confirmó que las tres pantallas ahora cargan y muestran datos reales (9 pedidos en `/admin/pedidos`, 12 movimientos en `/admin/inventario`, y el historial de un cliente recién registrado mostrando su pedido). También se probó el flujo completo de cambio de estado de un pedido (PENDIENTE → CONFIRMADO → ENVIADO → ENTREGADO), que dependía de poder listar pedidos para llegar al control.
 
+## 17. Registrar CUALQUIER movimiento de inventario rompía con Error 500 (bug más grave de la sesión, no detectado en pasadas anteriores)
+* **Estado:** ✅ Corregido y verificado
+* **Error message**: `SQLSTATE[23514]: Check violation: 7 ERROR: el nuevo registro para la relación «inventario» viola la restricción «check» «inventario_tipo_check»`
+* **Causa/Problema**: La columna heredada `inventario.tipo` tiene un `CHECK` que solo permite `'INGRESO'`/`'SALIDA'` (mayúsculas, en español), pero `Admin/Inventario/Create.vue` envía `'entrada'`/`'salida'` (minúsculas) y `InventarioController@store` los guardaba tal cual. **Esto significa que el formulario de registrar movimiento de inventario nunca funcionó, ni para entradas ni para salidas** — todas las filas reales en la tabla (`INGRESO`/`SALIDA`) vienen de los seeders, no del formulario web.
+* **Por qué se me escapó antes**: en la sesión anterior verifiqué "PR-17.2: Registrar entrada" y "PR-17.3: Registrar salida" comprobando solo que no apareciera un error visible y que la última fila de `inventario` existiera — pero esa fila siempre era una preexistente del seeder, nunca la que mi prueba acababa de intentar crear. No comparé el conteo total de filas ni el `stock_actual` antes/después con suficiente cuidado.
+* **Bug relacionado encontrado en el mismo flujo**: la técnica "FIFO" del selector tampoco coincidía con el `CHECK` de la columna `tecnica` (solo permite `PEPS`/`UEPS`/`PROMEDIO`, acrónimos en español — PEPS=FIFO, UEPS=LIFO).
+* **Solución aplicada**: se agregó un método `tipoLegado()` en `InventarioController` que mapea `entrada`→`INGRESO` y `salida`→`SALIDA` antes del `Inventario::create()`. En `Admin/Inventario/Create.vue` se cambiaron las opciones de técnica a `PEPS`/`UEPS`/`PROMEDIO` (mostrando "FIFO (PEPS)"/"LIFO (UEPS)" como etiqueta visible).
+* **Verificación**: con Playwright se registraron movimientos reales de entrada y salida que sí se insertaron en la BD y actualizaron `stock_actual` correctamente (confirmado con consultas directas antes/después).
+
+## 18. Sin validación de stock: una "salida" mayor al stock disponible se aceptaba y dejaba el stock en negativo
+* **Estado:** ✅ Corregido y verificado
+* **Problema**: Ni la validación del formulario ni el controlador comprobaban que la cantidad de una salida no superara el `stock_actual` del producto. Al probarlo (tras corregir el error #17) con una cantidad exagerada, el movimiento se guardó sin error y dejó el stock de un producto real en **-99989**.
+* **Solución aplicada**: en `InventarioController@store`, si `tipo === 'salida'` se compara la cantidad solicitada contra `stock_actual` y se rechaza con un mensaje en español si la excede.
+* **Verificación**: se intentó una salida de 999999 unidades sobre un producto con 50 en stock → error "La cantidad de salida (999999) supera el stock disponible (50)." y no se creó el movimiento.
+* **Nota de limpieza**: el stock corrupto (-99989) del producto real afectado por la prueba (id=12, "Blazer Ejecutivo Gris") fue restaurado a su valor original (10) con autorización del usuario, y se eliminó el movimiento de prueba que lo causó.
+
 ---
 
 ## Cambios de código realizados — sesión 1
@@ -123,6 +139,8 @@ Este archivo registra los errores detectados durante las pruebas MVP.
 * `resources/js/app.js`: fallback global de imágenes rotas (error #14).
 * `app/Http/Middleware/HandleInertiaRequests.php` + `resources/js/Layouts/AppLayout.vue`: badge de carrito real (error #15).
 * `app/Http/Controllers/Cliente/PedidoController.php`, `app/Http/Controllers/Admin/PedidoAdminController.php`, `app/Http/Controllers/Admin/InventarioController.php`: `orderByDesc('created_at')` → `orderByDesc('fecha')` (error #16).
+* `app/Http/Controllers/Admin/InventarioController.php`: mapeo `tipoLegado()` (entrada→INGRESO, salida→SALIDA) y validación de stock disponible en salidas (errores #17 y #18).
+* `resources/js/Pages/Admin/Inventario/Create.vue`: opciones de técnica corregidas a PEPS/UEPS/PROMEDIO (error #17).
 * Usuarios de prueba creados para testing por rol: `test.admin@local.test`, `test.propietario@local.test`, `test.vendedor@local.test` (password `TestPass123!`) — quedan en la BD para pruebas futuras.
 
 ## Metodología de verificación

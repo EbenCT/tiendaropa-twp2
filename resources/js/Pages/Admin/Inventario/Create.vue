@@ -30,7 +30,8 @@
               <label class="form-label">Técnica</label>
               <select v-model="form.tecnica" class="input">
                 <option value="PROMEDIO">Promedio</option>
-                <option value="FIFO">FIFO</option>
+                <option value="PEPS">FIFO (PEPS)</option>
+                <option value="UEPS">LIFO (UEPS)</option>
               </select>
             </div>
             <button type="submit" class="btn btn-primary" :disabled="form.processing">

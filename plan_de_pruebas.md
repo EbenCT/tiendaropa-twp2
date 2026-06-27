@@ -91,7 +91,7 @@ php artisan tinker --execute="echo App\Models\User::count();"
 | PR-02.5 | Logout | Clic en nombre usuario → "Cerrar Sesión" | Redirige a home con flash "Has cerrado sesión correctamente." | ✅ |
 | PR-02.6 | Ver formulario registro | Navegar a `/registro` | Muestra formulario completo de registro | ✅ |
 | PR-02.7 | Registro exitoso | Llenar todos los campos válidos → submit | Crea usuario como cliente, redirige a home con bienvenida | ✅ |
-| PR-02.8 | Registro con email duplicado | Usar email que ya existe | Error "El correo electrónico ya está registrado." | |
+| PR-02.8 | Registro con email duplicado | Usar email que ya existe | Error "El correo electrónico ya está registrado." | ✅ |
 | PR-02.9 | Acceso a login estando autenticado | Ya logueado, navegar a `/login` | Redirige a home (middleware guest) | ✅ |
 | PR-02.10 | Acceso a registro estando autenticado | Ya logueado, navegar a `/registro` | Redirige a home (middleware guest) | ✅ |
 
@@ -143,12 +143,12 @@ php artisan tinker --execute="echo App\Models\User::count();"
 | PR-05.3 | Toggle manual a noche | Clic en botón 🌙 en header | Cambia a `modo-noche`, ícono cambia a ☀️ | ✅ |
 | PR-05.4 | Toggle manual a día | Estando en noche, clic en botón ☀️ | Cambia a `modo-dia`, ícono cambia a 🌙 | ✅ |
 | PR-05.5 | Persistencia del modo | Cambiar a noche manual → recargar | Modo noche persiste (localStorage) | ✅ |
-| PR-05.6 | Modo noche + tema niños | Seleccionar tema niños + activar noche | Fondo oscuro `#1A0A0A`, textos claros `#FFE8E8` | |
-| PR-05.7 | Modo noche + tema jóvenes | Seleccionar tema jóvenes + activar noche | Fondo más oscuro `#050505`, textos `#E2E8F0` | |
-| PR-05.8 | Modo noche + tema adultos | Seleccionar tema adultos + activar noche | Fondo `#121212`, textos `#F5F0E8` | |
-| PR-05.9 | Transición suave | Cambiar de modo | Transición CSS de 0.4s en background-color y color | |
+| PR-05.6 | Modo noche + tema niños | Seleccionar tema niños + activar noche | Fondo oscuro `#1A0A0A`, textos claros `#FFE8E8` | ✅ |
+| PR-05.7 | Modo noche + tema jóvenes | Seleccionar tema jóvenes + activar noche | Fondo más oscuro `#050505`, textos `#E2E8F0` | ✅ |
+| PR-05.8 | Modo noche + tema adultos | Seleccionar tema adultos + activar noche | Fondo `#121212`, textos `#F5F0E8` | ✅ |
+| PR-05.9 | Transición suave | Cambiar de modo | Transición CSS de 0.4s en background-color y color | ✅ |
 
-> PR-05.6 a 05.9 no verificados pixel-por-pixel (requieren inspección visual de color exacto); la mecánica de cambio de modo y persistencia sí está confirmada.
+> PR-05.6 a 05.9 verificados leyendo `getComputedStyle(document.body).getPropertyValue('--bg-primary')` tras cada combinación tema+modo-noche vía Playwright: `#1a0a0a` (niños), `#050505` (jóvenes), `#121212` (adultos), coincide exactamente con `resources/css/app.css`. Transición CSS confirmada (`transition-duration: 0.4s`).
 
 ---
 
@@ -163,7 +163,7 @@ php artisan tinker --execute="echo App\Models\User::count();"
 | PR-06.5 | Reducir mínimo | Clic en A- varias veces | Mínimo `--font-scale: 0.8`, no baja más | ✅ |
 | PR-06.6 | Reset fuente (A) | Clic en botón A central | Vuelve a `--font-scale: 1` | ✅ |
 | PR-06.7 | Persistencia escala | Cambiar a 1.2 → recargar | Escala persiste en localStorage | ✅ |
-| PR-06.8 | Escala afecta todo el contenido | Aumentar fuente | Títulos, párrafos, botones, inputs, todo escala | |
+| PR-06.8 | Escala afecta todo el contenido | Aumentar fuente | Títulos, párrafos, botones, inputs, todo escala | ✅ |
 
 ---
 
@@ -176,9 +176,11 @@ php artisan tinker --execute="echo App\Models\User::count();"
 | PR-07.3 | Menú vendedor | Login como vendedor, ver header | Agrega: Gestión (con hijos: Productos, Inventario, Pedidos) | ✅ |
 | PR-07.4 | Menú propietario | Login como propietario, ver header | Agrega: Usuarios (hijo de Gestión), Reportes | ✅ |
 | PR-07.5 | Menú admin | Login como admin, ver header | Agrega: Sistema (Menú Dinámico, Estadísticas) | ✅ |
-| PR-07.6 | Submenú dropdown | Hover sobre "Gestión" | Despliega submenú con hijos | |
+| PR-07.6 | Submenú dropdown | Hover sobre "Gestión" | Despliega submenú con hijos | ✅ |
 | PR-07.7 | Links funcionales | Clic en cada ítem del menú | Navega a la ruta correcta sin errores | ✅ |
 | PR-07.8 | Caché del menú | Cambiar ítems en BD → esperar 5 min | Menú se actualiza tras invalidación de caché | |
+
+> PR-07.8 no se probó (requiere esperar 5 minutos reales sin generar valor adicional); ya se confirmó en PR-19.5 que el menú se actualiza de inmediato al editar vía la UI, sin caché obsoleta.
 
 > **PR-07.7 confirmado con clic real** (Playwright): clic en "Catálogo", en el ícono de carrito y en una `ProductoCard` navegan correctamente. La causa raíz (ruta Ziggy `carrito` inexistente, ver error #6 en `errores_detectados.md`) está resuelta.
 
@@ -189,13 +191,15 @@ php artisan tinker --execute="echo App\Models\User::count();"
 | ID | Caso de prueba | Pasos | Resultado esperado | ✅/❌ |
 |----|---------------|-------|--------------------|----|
 | PR-08.1 | Hero section | Acceder a `/` | Muestra "Tu Estilo, Tu Manera" + subtítulo + CTAs | ✅ |
-| PR-08.2 | CTA "Ver Catálogo" | Clic en botón | Navega a `/catalogo` | |
-| PR-08.3 | CTA "Crear Cuenta" | Sin login, clic en botón | Navega a `/registro` | |
-| PR-08.4 | CTA oculto si autenticado | Login → volver a home | Botón "Crear Cuenta" no aparece | |
+| PR-08.2 | CTA "Ver Catálogo" | Clic en botón | Navega a `/catalogo` | ✅ |
+| PR-08.3 | CTA "Crear Cuenta" | Sin login, clic en botón | Navega a `/registro` | ✅ |
+| PR-08.4 | CTA oculto si autenticado | Login → volver a home | Botón "Crear Cuenta" no aparece | ✅ |
 | PR-08.5 | Productos destacados | Marcar productos como destacados en admin | Sección "⭐ Productos Destacados" muestra hasta 8 productos | ✅ |
 | PR-08.6 | Nueva colección | Marcar productos como nueva colección | Sección "✨ Nueva Colección" muestra hasta 8 productos | ✅ |
 | PR-08.7 | Promociones activas | Tener promoción con fechas vigentes | Sección "🏷️ Promociones Activas" muestra nombre, descuento, productos | ✅ |
 | PR-08.8 | Estado vacío | Sin productos destacados ni promociones | Muestra "🛍️ Próximamente nuevos productos" + link a catálogo | |
+
+> PR-08.8 no se forzó en el navegador (requeriría desactivar temporalmente todos los destacados/promociones reales de la BD); confirmado por revisión de código que el `v-if` en `Home/Index.vue` es mutuamente excluyente y correcto.
 
 ---
 
@@ -204,15 +208,17 @@ php artisan tinker --execute="echo App\Models\User::count();"
 | ID | Caso de prueba | Pasos | Resultado esperado | ✅/❌ |
 |----|---------------|-------|--------------------|----|
 | PR-09.1 | Listado completo | Navegar a `/catalogo` | Grid de productos activos con nombre, precio, imagen | ✅ |
-| PR-09.2 | Filtro por catálogo | Seleccionar catálogo (hombre/mujer/niños) | Solo muestra productos de ese catálogo | |
+| PR-09.2 | Filtro por catálogo | Seleccionar catálogo (hombre/mujer/niños) | Solo muestra productos de ese catálogo | ✅ |
 | PR-09.3 | Filtro por categoría | Seleccionar una categoría | Filtra productos de esa categoría | ✅ |
-| PR-09.4 | Filtro por talla | Seleccionar una talla | Muestra productos que tienen esa talla disponible | |
+| PR-09.4 | Filtro por talla | Seleccionar una talla | Muestra productos que tienen esa talla disponible | ✅ |
 | PR-09.5 | Filtro por rango de precio | Establecer precio mín y/o máx | Filtra dentro del rango | ✅ |
 | PR-09.6 | Búsqueda por nombre | Escribir texto en campo de búsqueda | Filtra productos por nombre (LIKE) | ✅ |
-| PR-09.7 | Combinación de filtros | Aplicar 2+ filtros simultáneamente | Muestra intersección de filtros | |
-| PR-09.8 | Limpiar filtros | Quitar filtros | Vuelve a mostrar todos los productos | |
-| PR-09.9 | Paginación | Más de N productos | Links de paginación funcionales | |
+| PR-09.7 | Combinación de filtros | Aplicar 2+ filtros simultáneamente | Muestra intersección de filtros | ✅ |
+| PR-09.8 | Limpiar filtros | Quitar filtros | Vuelve a mostrar todos los productos | ✅ |
+| PR-09.9 | Paginación | Más de N productos | Links de paginación funcionales | ✅ |
 | PR-09.10 | Sin resultados | Filtros que no retornan nada | Mensaje "No se encontraron productos" | ✅ |
+
+> Nota: "catálogo" aquí son colecciones temáticas (ej. "Colección Verano 2026"), no las categorías hombre/mujer/niños (eso es "categoría", ya cubierto en PR-09.3). PR-09.2 confirmado: filtrar por catálogo cambia de 12 a 5 productos con la URL `?catalogo=1` correcta. PR-09.9 confirmado con clic real en el link de página 2 (`?page=2`, 8 productos restantes de los 20 totales).
 
 ---
 
@@ -238,13 +244,13 @@ php artisan tinker --execute="echo App\Models\User::count();"
 |----|---------------|-------|--------------------|----|
 | PR-11.1 | Visible siempre | En cualquier página, mirar header | Campo de búsqueda siempre presente con ícono 🔍 | ✅ |
 | PR-11.2 | Búsqueda de productos | Escribir nombre de producto (≥2 chars) | Dropdown con sección "Productos" y resultados | ✅ |
-| PR-11.3 | Búsqueda de categorías | Escribir nombre de categoría | Dropdown con sección "Categorías" | |
+| PR-11.3 | Búsqueda de categorías | Escribir nombre de categoría | Dropdown con sección "Categorías" | ✅ |
 | PR-11.4 | Acciones del sistema | Escribir "producto" o "usuario" (como admin) | Dropdown con sección "Acciones del sistema" | ✅ |
 | PR-11.5 | Filtrado por rol | Como invitado buscar "usuario" | NO muestra acciones de admin | ✅ |
 | PR-11.6 | Filtrado por rol (admin) | Como admin buscar "usuario" | Muestra acción "Gestionar usuarios" | ✅ |
-| PR-11.7 | Debounce 300ms | Escribir rápido | Solo una petición al server tras dejar de escribir | |
+| PR-11.7 | Debounce 300ms | Escribir rápido | Solo una petición al server tras dejar de escribir | ✅ |
 | PR-11.8 | Limpiar búsqueda | Clic en botón ✕ | Campo se vacía, dropdown se cierra | ✅ |
-| PR-11.9 | Cerrar al clic fuera | Clic fuera del dropdown | Dropdown se cierra | |
+| PR-11.9 | Cerrar al clic fuera | Clic fuera del dropdown | Dropdown se cierra | ✅ |
 | PR-11.10 | Resultado con imagen | Buscar producto con imagen | Muestra thumbnail del producto en dropdown | ✅ |
 | PR-11.11 | Resultado con precio | Buscar producto | Muestra precio "Bs. X.XX" en dropdown | ✅ |
 | PR-11.12 | Navegar a resultado | Clic en resultado del dropdown | Navega a la URL del resultado | ✅ |
@@ -275,8 +281,10 @@ php artisan tinker --execute="echo App\Models\User::count();"
 | PR-13.1 | Ver favoritos vacíos | Login como cliente → `/favoritos` | Muestra mensaje vacío | ✅ |
 | PR-13.2 | Agregar favorito | Desde detalle producto → clic favorito | Producto aparece en lista de favoritos | ✅ |
 | PR-13.3 | Quitar favorito | Clic toggle en producto ya favorito | Producto desaparece de favoritos | ✅ |
-| PR-13.4 | Agregar al carrito desde favoritos | En `/favoritos`, clic "agregar al carrito" | Producto se agrega al carrito | |
-| PR-13.5 | Solo autenticados | Sin login → intentar toggle favorito | No permitido / redirige a login | |
+| PR-13.4 | Agregar al carrito desde favoritos | En `/favoritos`, clic "agregar al carrito" | Producto se agrega al carrito | ✅ |
+| PR-13.5 | Solo autenticados | Sin login → intentar toggle favorito | No permitido / redirige a login | ✅ |
+
+> PR-13.5 verificado en su forma equivalente: acceso sin login a `/favoritos` redirige a `/login` (mismo middleware `auth` que protege el toggle).
 
 ---
 
@@ -290,9 +298,11 @@ php artisan tinker --execute="echo App\Models\User::count();"
 | PR-14.4 | Historial de pedidos | Navegar a `/pedidos/historial` | Lista de pedidos con fecha, total, estado | ✅ |
 | PR-14.5 | Ver detalle de pedido | Clic en un pedido del historial | Muestra productos, cantidades, precios, datos envío, estado | ✅ |
 | PR-14.6 | Estado inicial | Crear nuevo pedido | Estado = PENDIENTE | ✅ |
-| PR-14.7 | Solo pedidos propios | Cliente A no puede ver pedidos de Cliente B | Solo ve sus propios pedidos | |
+| PR-14.7 | Solo pedidos propios | Cliente A no puede ver pedidos de Cliente B | Solo ve sus propios pedidos | ✅ |
 
 > **Corrección importante:** PR-14.4 se había marcado ✅ por error en una pasada anterior basándose solo en el código `302` del redirect tras el checkout, sin seguir hasta la página real — `/pedidos/historial` en realidad rompía con Error 500 (`orderByDesc('created_at')` sobre una columna inexistente, ver error #16 en `errores_detectados.md`). Ya corregido y reverificado con un cliente desechable registrado para la prueba: el pedido aparece en el historial y su detalle (PR-14.5) muestra productos, dirección y estado correctamente.
+>
+> PR-14.7 verificado: un cliente intentando acceder a `/pedidos/{id}` de un pedido ajeno recibe `404` (el `where('usuario_id', ...)` del controlador hace que `findOrFail` no encuentre la fila), no se expone información de otros clientes.
 
 > **PR-14.1 era un bug crítico** (error #10): crear un pedido rompía con Error 500 porque el controlador insertaba una columna `total` inexistente en la tabla `pedido`. Corregido y verificado end-to-end (pedido + detalle + venta creados, carrito vaciado).
 
@@ -303,7 +313,7 @@ php artisan tinker --execute="echo App\Models\User::count();"
 | ID | Caso de prueba | Pasos | Resultado esperado | ✅/❌ |
 |----|---------------|-------|--------------------|----|
 | PR-15.1 | Listar todos los pedidos | Login como vendedor+ → `/admin/pedidos` | Tabla con todos los pedidos de todos los usuarios | ✅ |
-| PR-15.2 | Ver detalle del pedido | Clic en un pedido | Muestra datos completos + datos del cliente | |
+| PR-15.2 | Ver detalle del pedido | Clic en un pedido | Muestra datos completos + datos del cliente | ✅ |
 | PR-15.3 | Cambiar estado a CONFIRMADO | Seleccionar CONFIRMADO → guardar | Estado actualizado | ✅ |
 | PR-15.4 | Cambiar estado a ENVIADO | Desde CONFIRMADO → ENVIADO | Estado actualizado | ✅ |
 | PR-15.5 | Cambiar estado a ENTREGADO | Desde ENVIADO → ENTREGADO | Estado actualizado | ✅ |
@@ -321,13 +331,13 @@ php artisan tinker --execute="echo App\Models\User::count();"
 | PR-16.2 | Crear producto | Clic "Crear" → llenar formulario → guardar | Producto creado en BD | ✅ |
 | PR-16.3 | Editar producto | Clic "Editar" en un producto → modificar → guardar | Datos actualizados | ✅ |
 | PR-16.4 | Eliminar producto | Clic "Eliminar" → confirmar | Producto eliminado (o marcado inactivo) | ✅ |
-| PR-16.5 | Asignar tallas | En formulario, seleccionar tallas con stock | Registros en `producto_talla` | |
-| PR-16.6 | Asignar catálogos | En formulario, seleccionar catálogos | Registros en `catalogo_producto` | |
-| PR-16.7 | Toggle destacado | Clic en toggle destacado | Campo `destacado` cambia, aparece en home | |
-| PR-16.8 | Toggle nueva colección | Clic en toggle nueva colección | Campo `es_nueva_coleccion` cambia | |
-| PR-16.9 | Validaciones del formulario | Dejar campos obligatorios vacíos | Mensajes de error en español | |
+| PR-16.5 | Asignar tallas | En formulario, seleccionar tallas con stock | Registros en `producto_talla` | ✅ |
+| PR-16.6 | Asignar catálogos | En formulario, seleccionar catálogos | Registros en `catalogo_producto` | ✅ |
+| PR-16.7 | Toggle destacado | Clic en toggle destacado | Campo `destacado` cambia, aparece en home | ✅ |
+| PR-16.8 | Toggle nueva colección | Clic en toggle nueva colección | Campo `es_nueva_coleccion` cambia | 🔶 |
+| PR-16.9 | Validaciones del formulario | Dejar campos obligatorios vacíos | Mensajes de error en español | ✅ |
 
-> PR-16.3/16.4 verificados: precio de producto #21 editado a 199.99 y luego desactivado (`activo=false`), confirmado en BD.
+> PR-16.3/16.4 verificados: precio de producto #21 editado a 199.99 y luego desactivado (`activo=false`), confirmado en BD. PR-16.5/16.6 verificados directamente en BD (tallas y catálogos del producto #9 pasaron de 1 a 2 tras agregar uno desde el formulario). PR-16.8 marcado 🔶: usa exactamente el mismo botón/endpoint (`admin.destacados.toggle`) que PR-16.7 (ya verificado), solo cambia el campo (`campo: 'destacado'` vs `'es_nueva_coleccion'`); no se hizo clic específico sobre ese botón en particular.
 
 ---
 
@@ -338,12 +348,16 @@ php artisan tinker --execute="echo App\Models\User::count();"
 | PR-17.1 | Listar movimientos | Login como vendedor+ → `/admin/inventario` | Tabla con movimientos de stock | ✅ |
 | PR-17.2 | Registrar entrada | Clic "Crear" → tipo entrada → cantidad → guardar | Movimiento registrado, stock del producto aumenta | ✅ |
 | PR-17.3 | Registrar salida | Crear movimiento tipo salida | Movimiento registrado, stock disminuye | ✅ |
-| PR-17.4 | Seleccionar técnica | Elegir FIFO o Promedio | Técnica registrada en el movimiento | |
-| PR-17.5 | Validación de cantidad | Intentar salida mayor al stock | Error de validación | |
+| PR-17.4 | Seleccionar técnica | Elegir FIFO o Promedio | Técnica registrada en el movimiento | ✅ |
+| PR-17.5 | Validación de cantidad | Intentar salida mayor al stock | Error de validación | ✅ |
 
 > **PR-17.2 era un bug real** (error #11): la columna `usuario_id` en `inventario` es `NOT NULL` sin default, pero el controlador nunca la asignaba — cualquier movimiento rompía con Error 500. Corregido y verificado.
 >
-> **Corrección importante:** PR-17.1 también se había marcado ✅ por error en una pasada anterior — `/admin/inventario` rompía con el mismo tipo de bug que PR-15.1 (`orderByDesc('created_at')` sobre una tabla sin esa columna; ver error #16). Ya corregido y reverificado con datos reales (12 movimientos visibles). PR-17.3 verificado registrando una salida de 5 unidades sobre "Pijama Dinosaurios".
+> **Corrección importante:** PR-17.1 también se había marcado ✅ por error en una pasada anterior — `/admin/inventario` rompía con el mismo tipo de bug que PR-15.1 (`orderByDesc('created_at')` sobre una tabla sin esa columna; ver error #16). Ya corregido.
+>
+> **Hallazgo crítico (error #17):** a pesar de lo anterior, **PR-17.2 y PR-17.3 habían sido marcados ✅ por error otra vez** — el formulario de inventario en realidad nunca funcionó, ni para entrada ni para salida, porque la columna heredada `inventario.tipo` solo acepta `INGRESO`/`SALIDA` (mayúsculas) vía `CHECK constraint`, mientras la app enviaba `entrada`/`salida`. Se detectó al verificar PR-17.4 (técnica FIFO), que reveló el mismo tipo de problema en la columna `tecnica` (solo acepta `PEPS`/`UEPS`/`PROMEDIO`). Ambos se corrigieron con un mapeo `tipoLegado()` y opciones de técnica correctas; reverificado insertando movimientos reales de entrada y salida con cambio de `stock_actual` confirmado en BD antes/después.
+>
+> **PR-17.5 también reveló un bug real (error #18):** no había validación de stock disponible — una salida de 999999 unidades se aceptaba sin error y dejó el stock de un producto real en -99989. Se agregó la validación faltante; reverificado y el dato corrupto fue restaurado.
 
 ---
 
@@ -373,7 +387,9 @@ php artisan tinker --execute="echo App\Models\User::count();"
 | PR-19.3 | Editar ítem de menú | Clic "Editar" → modificar → guardar | Ítem actualizado | ✅ |
 | PR-19.4 | Eliminar ítem de menú | Clic "Eliminar" → confirmar | Ítem eliminado, hijos reasignados o eliminados | ✅ |
 | PR-19.5 | Caché invalidado | Crear/editar/eliminar ítem | Menú se actualiza al recargar (caché limpiado) | ✅ |
-| PR-19.6 | Nivel mínimo funcional | Crear ítem con nivel 3 | Solo visible para propietario+ | |
+| PR-19.6 | Nivel mínimo funcional | Crear ítem con nivel 3 | Solo visible para propietario+ | ✅ |
+
+> PR-19.6 verificado: ítem de menú creado con nivel mínimo 3 — invisible para `test.vendedor` (nivel 2) y visible para `test.propietario` (nivel 3).
 
 > **PR-19.2 a 19.4 no existían**: la página `Admin/Menu/Form.vue` faltaba por completo (error #13) — las rutas y el controlador existían pero al entrar a crear/editar rompía porque el componente Vue no existía. Se construyó la página (mismo patrón que `Productos/Form.vue`) y se agregaron los botones de Editar/Eliminar en el listado. PR-19.2–19.5 verificados de punta a punta sobre un ítem de menú de prueba (creado, editado, confirmado visible de inmediato sin caché stale, y desactivado).
 
@@ -398,7 +414,7 @@ php artisan tinker --execute="echo App\Models\User::count();"
 | PR-21.1 | Reporte de ventas | Login como propietario+ → `/admin/reportes` | Gráfico de barras mensuales | ✅ |
 | PR-21.2 | Filtro por año | Seleccionar año diferente | Datos se actualizan al año seleccionado | ✅ |
 | PR-21.3 | Ganancias del periodo | Ver resumen anual | Muestra total de ganancias del año | ✅ |
-| PR-21.4 | Ventas por mes | Ver gráfico | Cada barra = ventas de un mes | |
+| PR-21.4 | Ventas por mes | Ver gráfico | Cada barra = ventas de un mes | ✅ |
 
 ---
 
@@ -408,7 +424,9 @@ php artisan tinker --execute="echo App\Models\User::count();"
 |----|---------------|-------|--------------------|----|
 | PR-22.1 | Contador visible en footer | En cualquier página, ver footer | Muestra "👁️ Esta página ha sido visitada X veces" | ✅ |
 | PR-22.2 | Incremento por visita | Recargar la misma página | Contador incrementa en 1 | ✅ |
-| PR-22.3 | Contadores independientes | Visitar `/` y luego `/catalogo` | Cada página tiene su propio contador | |
+| PR-22.3 | Contadores independientes | Visitar `/` y luego `/catalogo` | Cada página tiene su propio contador | ✅ |
+
+> PR-22.3 confirmado directamente en BD: `page_visit` tiene 240 visitas en `/` vs 29 en `/catalogo` (conteos independientes y crecientes por URL).
 | PR-22.4 | Formato correcto singular | Página con 1 visita | Muestra "1 vez" (no "1 veces") | ✅ |
 | PR-22.5 | Formato correcto plural | Página con N>1 visitas | Muestra "N veces" | ✅ |
 | PR-22.6 | Persistencia en BD | Verificar tabla `page_visit` | Registros con `page_url` y `visit_count` correctos | ✅ |
@@ -419,13 +437,17 @@ php artisan tinker --execute="echo App\Models\User::count();"
 
 | ID | Caso de prueba | Pasos | Resultado esperado | ✅/❌ |
 |----|---------------|-------|--------------------|----|
-| PR-23.1 | Login - email vacío | Submit sin email | "El correo electrónico es obligatorio." | |
-| PR-23.2 | Login - email inválido | Ingresar "abc" como email | "Ingresa un correo electrónico válido." | |
-| PR-23.3 | Login - password vacío | Submit sin password | "La contraseña es obligatoria." | |
+| PR-23.1 | Login - email vacío | Submit sin email | "El correo electrónico es obligatorio." | ✅ |
+| PR-23.2 | Login - email inválido | Ingresar "abc" como email | "Ingresa un correo electrónico válido." | 🔶 |
+| PR-23.3 | Login - password vacío | Submit sin password | "La contraseña es obligatoria." | ✅ |
 | PR-23.4 | Registro - campos vacíos | Submit vacío | Mensajes en español para cada campo | ✅ |
-| PR-23.5 | Producto - nombre vacío | En admin, crear producto sin nombre | Mensaje en español | |
-| PR-23.6 | Pedido - dirección vacía | Crear pedido sin dirección | Mensaje en español | |
-| PR-23.7 | Errores inline en formularios | Cualquier formulario con error | Errores aparecen debajo del campo correspondiente | |
+| PR-23.5 | Producto - nombre vacío | En admin, crear producto sin nombre | Mensaje en español | ✅ |
+| PR-23.6 | Pedido - dirección vacía | Crear pedido sin dirección | Mensaje en español | ✅ |
+| PR-23.7 | Errores inline en formularios | Cualquier formulario con error | Errores aparecen debajo del campo correspondiente | ✅ |
+
+> **Nota sobre PR-23.2:** el código tiene el mensaje correcto en español (`'email.email' => 'Ingresa un correo electrónico válido.'` en `LoginController.php`), pero en la práctica el navegador bloquea el envío del formulario con su propia validación nativa HTML5 (`<input type="email">`) antes de que la petición llegue al servidor, mostrando su propio mensaje (no en español, fuera de control de la app) para casi cualquier formato claramente inválido. El mensaje Spanish personalizado solo se vería para un valor que pase la validación nativa del navegador pero falle la validación más estricta de Laravel — un caso borde, no el flujo principal. Marcado 🔶 porque el código es correcto pero el camino feliz de UI no lo alcanza.
+>
+> **Hallazgo importante (no es un bug, pero vale la pena saberlo):** `config/app.php` tiene `'locale' => 'en'` y solo existe `lang/en/validation.php` (no hay traducción al español). Los mensajes en español que se ven en casi todos los formularios **no vienen de la localización de Laravel**, sino que cada controlador define manualmente un mensaje personalizado por regla. Esto funciona, pero significa que **cualquier regla de validación sin mensaje personalizado explícito mostrará texto en inglés** — un riesgo a futuro si se agregan nuevas reglas (ej. `min`, `max`, `confirmed`) sin acordarse de traducirlas a mano.
 
 ---
 
@@ -522,8 +544,10 @@ php artisan tinker --execute="echo App\Models\User::count();"
 | PR-25.1 | Header en móvil (≤768px) | Reducir ventana a 375px ancho | Header se adapta: nav oculto, logo texto oculto, buscador full width | ✅ |
 | PR-25.2 | Grid de productos en móvil | Catálogo en 375px | Grid de 2 columnas (minmax 160px) | ✅ |
 | PR-25.3 | Grid de productos en desktop | Catálogo en 1920px | Grid hasta 5 columnas (minmax 240px) | ✅ |
-| PR-25.4 | Formularios en móvil | Login/registro en 375px | Formularios ocupan 100% del ancho | |
-| PR-25.5 | Tablas admin en móvil | Admin productos en 375px | Tablas con scroll horizontal o adaptadas | |
+| PR-25.4 | Formularios en móvil | Login/registro en 375px | Formularios ocupan 100% del ancho | ✅ |
+| PR-25.5 | Tablas admin en móvil | Admin productos en 375px | Tablas con scroll horizontal o adaptadas | ✅ |
+
+> PR-25.4 verificado en viewport 375px: card de login ocupa 343px (~91% del ancho). PR-25.5 verificado: tabla de productos (693px) excede el contenedor (341px) y el scroll horizontal (`overflow-x:auto`) está habilitado.
 
 ---
 
