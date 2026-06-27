@@ -2,8 +2,10 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\CarritoItem;
 use App\Models\MenuItem;
 use App\Models\PageVisit;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -50,6 +52,9 @@ class HandleInertiaRequests extends Middleware
 
             // Visitas de la página actual
             'pageVisits' => $this->getPageVisits($currentUrl),
+
+            // Cantidad total de ítems en el carrito (badge del header)
+            'carritoCount' => $this->getCarritoCount($user),
 
             // Flash messages
             'flash' => [
@@ -101,6 +106,22 @@ class HandleInertiaRequests extends Middleware
     {
         try {
             return PageVisit::where('page_url', $url)->value('visit_count') ?? 0;
+        } catch (\Throwable $e) {
+            return 0;
+        }
+    }
+
+    /**
+     * Suma la cantidad de ítems en el carrito del usuario autenticado.
+     */
+    private function getCarritoCount(?User $user): int
+    {
+        if (!$user) {
+            return 0;
+        }
+
+        try {
+            return (int) CarritoItem::where('usuario_id', $user->id)->sum('cantidad');
         } catch (\Throwable $e) {
             return 0;
         }

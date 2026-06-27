@@ -166,7 +166,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { Link, router, usePage } from '@inertiajs/vue3'
 import { useTema } from '@/composables/useTema'
 import axios from 'axios'
@@ -205,8 +205,7 @@ onMounted(() => document.addEventListener('click', clickFuera))
 onBeforeUnmount(() => document.removeEventListener('click', clickFuera))
 
 // ── Carrito badge ────────────────────────────────────────────
-const carritoCount = ref(0)
-// Se actualizará desde eventos
+const carritoCount = computed(() => usePage().props.carritoCount ?? 0)
 
 // ── Logout ───────────────────────────────────────────────────
 function logout() { router.post(route('logout')) }

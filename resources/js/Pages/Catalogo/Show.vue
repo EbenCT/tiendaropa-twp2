@@ -139,14 +139,13 @@ const formFav = useForm({})
 
 function agregarCarrito() {
   if (!user.value) { window.location.href = route('login'); return }
-  formCarrito.post(route('carrito.agregar'), {
-    data: {
+  formCarrito
+    .transform(() => ({
       producto_id: props.producto.id,
       talla_id: tallaSeleccionada.value,
       cantidad: cantidad.value,
-    },
-    preserveScroll: true,
-  })
+    }))
+    .post(route('carrito.agregar'), { preserveScroll: true })
 }
 
 function toggleFavorito() {

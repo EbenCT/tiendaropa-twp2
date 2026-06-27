@@ -68,7 +68,7 @@ class UsuarioAdminController extends Controller
             'email'     => $request->email,
             'telefono'  => $request->telefono,
             'password'  => Hash::make($request->password),
-            'rol'       => strtoupper($request->rol_nuevo),
+            'rol'       => $this->rolLegado($request->rol_nuevo),
             'rol_nuevo' => $request->rol_nuevo,
             'activo'    => true,
         ]);
@@ -104,7 +104,7 @@ class UsuarioAdminController extends Controller
 
         $usuario = User::findOrFail($id);
         $data = $request->only(['nombre', 'apellido', 'email', 'telefono', 'rol_nuevo']);
-        $data['rol'] = strtoupper($request->rol_nuevo);
+        $data['rol'] = $this->rolLegado($request->rol_nuevo);
         $data['activo'] = $request->boolean('activo', true);
 
         if ($request->filled('password')) {
@@ -123,6 +123,16 @@ class UsuarioAdminController extends Controller
         $usuario->update(['activo' => false]);
 
         return back()->with('success', 'Usuario desactivado.');
+    }
+
+    /**
+     * La columna heredada 'rol' tiene un CHECK constraint que solo permite
+     * PROPIETARIO/VENDEDOR/CLIENTE (el proyecto Java nunca tuvo rol admin),
+     * por lo que 'admin' debe mapearse a un valor permitido para no violar la BD.
+     */
+    private function rolLegado(string $rolNuevo): string
+    {
+        return $rolNuevo === 'admin' ? 'PROPIETARIO' : strtoupper($rolNuevo);
     }
 
     private function getRolesDisponibles(User $currentUser): array

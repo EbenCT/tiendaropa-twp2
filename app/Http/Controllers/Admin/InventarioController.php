@@ -47,10 +47,10 @@ class InventarioController extends Controller
 
         Inventario::create([
             'producto_id' => $request->producto_id,
+            'usuario_id'  => $request->user()->id,
             'tipo'        => $request->tipo,
             'cantidad'    => $request->cantidad,
             'tecnica'     => $request->tecnica ?? 'PROMEDIO',
-            'activo'      => true,
         ]);
 
         // Actualizar stock del producto

@@ -8,7 +8,7 @@ class Pedido extends Model
 {
     protected $table = 'pedido';
     public $timestamps = false;
-    protected $fillable = ['usuario_id', 'fecha', 'estado', 'direccion', 'telefono', 'referencia', 'total', 'activo'];
+    protected $fillable = ['usuario_id', 'fecha', 'estado', 'direccion', 'telefono', 'referencia', 'activo'];
     protected $casts = ['activo' => 'boolean', 'fecha' => 'datetime'];
 
     public function usuario()  { return $this->belongsTo(User::class, 'usuario_id'); }

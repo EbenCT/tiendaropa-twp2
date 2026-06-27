@@ -50,14 +50,13 @@ class PedidoController extends Controller
 
         $total = $items->sum(fn($i) => $i->cantidad * $i->producto->precio_unitario);
 
-        // Crear pedido
+        // Crear pedido (la tabla 'pedido' no tiene columna 'total': se calcula desde detalle_pedido)
         $pedido = Pedido::create([
             'usuario_id'  => $user->id,
             'direccion'   => $request->direccion,
             'telefono'    => $request->telefono,
             'referencia'  => $request->referencia,
             'estado'      => 'PENDIENTE',
-            'total'       => $total,
             'activo'      => true,
         ]);
 
