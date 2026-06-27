@@ -85,9 +85,12 @@ Sistema de e-commerce de ropa (hombre, mujer, niños) sobre una BD existente del
 | Seeder | Datos |
 |---|---|
 | `RolSeeder` | 4 roles: admin(4), propietario(3), vendedor(2), cliente(1) |
-| `TallaSeeder` | 21 tallas (adulto XS-XXL, niño 2-14, calzado) |
-| `MenuItemSeeder` | 15 ítems de menú con niveles y jerarquía padre-hijo |
-| `AsignarRolesUsuariosSeeder` | Asigna `rol_nuevo` a los 15 usuarios existentes |
+| `TallaSeeder` | 27 tallas (adulto XS-XXL, niño 2-14, calzado, pantalón 28-38) |
+| `MenuItemSeeder` | Ítems de menú con niveles y jerarquía padre-hijo |
+| `AsignarRolesUsuariosSeeder` | Asigna `rol_nuevo` a los usuarios existentes |
+| `HashPasswordsSeeder` | Hashea con bcrypt los passwords en texto plano heredados de Java |
+| `ProductoTallaSeeder` | Migra `producto.talla` (texto libre legado) → pivot `producto_talla` |
+| `DestacadosSeeder` | Marca productos como `destacado`/`es_nueva_coleccion` |
 
 ---
 

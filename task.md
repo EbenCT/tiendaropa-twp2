@@ -21,7 +21,7 @@
 - [x] Crear tabla `page_visit`
 - [x] Crear tabla `metodo_pago_usuario`
 - [x] Crear 20 Modelos Eloquent con relaciones
-- [x] Seeders: `RolSeeder`, `TallaSeeder`, `MenuItemSeeder`, `AsignarRolesUsuariosSeeder`
+- [x] Seeders: `RolSeeder`, `TallaSeeder`, `MenuItemSeeder`, `AsignarRolesUsuariosSeeder`, `HashPasswordsSeeder`, `ProductoTallaSeeder`, `DestacadosSeeder`
 
 ## FASE 3 – Autenticación y Roles ✅
 - [x] `LoginController` (login + logout)
@@ -115,7 +115,7 @@
 | Controladores | 17 |
 | Modelos Eloquent | 20 |
 | Migraciones | 11 |
-| Seeders | 4 |
+| Seeders | 7 |
 | Vistas Vue | 21 páginas + 1 layout + 1 componente |
 | Composables | 1 (useTema.js) |
 | Middleware custom | 3 (CheckRole, TrackPageVisit, HandleInertiaRequests) |
