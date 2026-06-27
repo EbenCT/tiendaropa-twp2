@@ -92,7 +92,7 @@ class PedidoController extends Controller
     {
         $pedidos = Pedido::where('usuario_id', $request->user()->id)
             ->with(['detalles.producto'])
-            ->orderByDesc('created_at')
+            ->orderByDesc('fecha')
             ->paginate(10);
 
         return Inertia::render('Pedidos/Historial', compact('pedidos'));

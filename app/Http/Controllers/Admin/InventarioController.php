@@ -18,7 +18,7 @@ class InventarioController extends Controller
             $query->where('producto_id', $request->producto_id);
         }
 
-        $movimientos = $query->orderByDesc('created_at')->paginate(20)->withQueryString();
+        $movimientos = $query->orderByDesc('fecha')->paginate(20)->withQueryString();
         $productos   = Producto::where('activo', true)->select('id', 'nombre')->get();
 
         return Inertia::render('Admin/Inventario/Index', compact('movimientos', 'productos'));

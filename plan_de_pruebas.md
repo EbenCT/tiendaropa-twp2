@@ -288,9 +288,11 @@ php artisan tinker --execute="echo App\Models\User::count();"
 | PR-14.2 | Campos obligatorios | Intentar crear pedido sin dirección | Mensaje de error en español | ✅ |
 | PR-14.3 | Resumen del pedido | En formulario de crear pedido | Muestra lista de productos, cantidades y total | ✅ |
 | PR-14.4 | Historial de pedidos | Navegar a `/pedidos/historial` | Lista de pedidos con fecha, total, estado | ✅ |
-| PR-14.5 | Ver detalle de pedido | Clic en un pedido del historial | Muestra productos, cantidades, precios, datos envío, estado | |
+| PR-14.5 | Ver detalle de pedido | Clic en un pedido del historial | Muestra productos, cantidades, precios, datos envío, estado | ✅ |
 | PR-14.6 | Estado inicial | Crear nuevo pedido | Estado = PENDIENTE | ✅ |
 | PR-14.7 | Solo pedidos propios | Cliente A no puede ver pedidos de Cliente B | Solo ve sus propios pedidos | |
+
+> **Corrección importante:** PR-14.4 se había marcado ✅ por error en una pasada anterior basándose solo en el código `302` del redirect tras el checkout, sin seguir hasta la página real — `/pedidos/historial` en realidad rompía con Error 500 (`orderByDesc('created_at')` sobre una columna inexistente, ver error #16 en `errores_detectados.md`). Ya corregido y reverificado con un cliente desechable registrado para la prueba: el pedido aparece en el historial y su detalle (PR-14.5) muestra productos, dirección y estado correctamente.
 
 > **PR-14.1 era un bug crítico** (error #10): crear un pedido rompía con Error 500 porque el controlador insertaba una columna `total` inexistente en la tabla `pedido`. Corregido y verificado end-to-end (pedido + detalle + venta creados, carrito vaciado).
 
@@ -302,12 +304,12 @@ php artisan tinker --execute="echo App\Models\User::count();"
 |----|---------------|-------|--------------------|----|
 | PR-15.1 | Listar todos los pedidos | Login como vendedor+ → `/admin/pedidos` | Tabla con todos los pedidos de todos los usuarios | ✅ |
 | PR-15.2 | Ver detalle del pedido | Clic en un pedido | Muestra datos completos + datos del cliente | |
-| PR-15.3 | Cambiar estado a CONFIRMADO | Seleccionar CONFIRMADO → guardar | Estado actualizado | |
-| PR-15.4 | Cambiar estado a ENVIADO | Desde CONFIRMADO → ENVIADO | Estado actualizado | |
-| PR-15.5 | Cambiar estado a ENTREGADO | Desde ENVIADO → ENTREGADO | Estado actualizado | |
-| PR-15.6 | Flujo completo de estados | PENDIENTE → CONFIRMADO → ENVIADO → ENTREGADO | Cada transición funciona correctamente | |
+| PR-15.3 | Cambiar estado a CONFIRMADO | Seleccionar CONFIRMADO → guardar | Estado actualizado | ✅ |
+| PR-15.4 | Cambiar estado a ENVIADO | Desde CONFIRMADO → ENVIADO | Estado actualizado | ✅ |
+| PR-15.5 | Cambiar estado a ENTREGADO | Desde ENVIADO → ENTREGADO | Estado actualizado | ✅ |
+| PR-15.6 | Flujo completo de estados | PENDIENTE → CONFIRMADO → ENVIADO → ENTREGADO | Cada transición funciona correctamente | ✅ |
 
-> PR-15.2 a 15.6 quedaron sin confirmar limpiamente por timing del script de pruebas (el selector de fila a veces no calzaba tras paginación); el código del `<select>` inline (`cambiarEstado()` vía `router.patch`) está correctamente implementado y no mostró errores de servidor en los intentos realizados.
+> **Corrección importante:** en una pasada anterior se había marcado PR-15.1 como ✅ por error — en realidad `/admin/pedidos` rompía con Error 500 (`SQLSTATE[42703]: Undefined column: created_at`, ver error #16 en `errores_detectados.md`). El bug se detectó al intentar probar PR-15.3 y ya está corregido; las 6 pruebas de esta sección están confirmadas con el flujo completo de estados PENDIENTE → CONFIRMADO → ENVIADO → ENTREGADO ejecutado de punta a punta sobre el pedido #9.
 
 ---
 
@@ -317,13 +319,15 @@ php artisan tinker --execute="echo App\Models\User::count();"
 |----|---------------|-------|--------------------|----|
 | PR-16.1 | Listar productos | Login como vendedor+ → `/admin/productos` | Tabla con todos los productos | ✅ |
 | PR-16.2 | Crear producto | Clic "Crear" → llenar formulario → guardar | Producto creado en BD | ✅ |
-| PR-16.3 | Editar producto | Clic "Editar" en un producto → modificar → guardar | Datos actualizados | |
-| PR-16.4 | Eliminar producto | Clic "Eliminar" → confirmar | Producto eliminado (o marcado inactivo) | |
+| PR-16.3 | Editar producto | Clic "Editar" en un producto → modificar → guardar | Datos actualizados | ✅ |
+| PR-16.4 | Eliminar producto | Clic "Eliminar" → confirmar | Producto eliminado (o marcado inactivo) | ✅ |
 | PR-16.5 | Asignar tallas | En formulario, seleccionar tallas con stock | Registros en `producto_talla` | |
 | PR-16.6 | Asignar catálogos | En formulario, seleccionar catálogos | Registros en `catalogo_producto` | |
 | PR-16.7 | Toggle destacado | Clic en toggle destacado | Campo `destacado` cambia, aparece en home | |
 | PR-16.8 | Toggle nueva colección | Clic en toggle nueva colección | Campo `es_nueva_coleccion` cambia | |
 | PR-16.9 | Validaciones del formulario | Dejar campos obligatorios vacíos | Mensajes de error en español | |
+
+> PR-16.3/16.4 verificados: precio de producto #21 editado a 199.99 y luego desactivado (`activo=false`), confirmado en BD.
 
 ---
 
@@ -333,11 +337,13 @@ php artisan tinker --execute="echo App\Models\User::count();"
 |----|---------------|-------|--------------------|----|
 | PR-17.1 | Listar movimientos | Login como vendedor+ → `/admin/inventario` | Tabla con movimientos de stock | ✅ |
 | PR-17.2 | Registrar entrada | Clic "Crear" → tipo entrada → cantidad → guardar | Movimiento registrado, stock del producto aumenta | ✅ |
-| PR-17.3 | Registrar salida | Crear movimiento tipo salida | Movimiento registrado, stock disminuye | |
+| PR-17.3 | Registrar salida | Crear movimiento tipo salida | Movimiento registrado, stock disminuye | ✅ |
 | PR-17.4 | Seleccionar técnica | Elegir FIFO o Promedio | Técnica registrada en el movimiento | |
 | PR-17.5 | Validación de cantidad | Intentar salida mayor al stock | Error de validación | |
 
 > **PR-17.2 era un bug real** (error #11): la columna `usuario_id` en `inventario` es `NOT NULL` sin default, pero el controlador nunca la asignaba — cualquier movimiento rompía con Error 500. Corregido y verificado.
+>
+> **Corrección importante:** PR-17.1 también se había marcado ✅ por error en una pasada anterior — `/admin/inventario` rompía con el mismo tipo de bug que PR-15.1 (`orderByDesc('created_at')` sobre una tabla sin esa columna; ver error #16). Ya corregido y reverificado con datos reales (12 movimientos visibles). PR-17.3 verificado registrando una salida de 5 unidades sobre "Pijama Dinosaurios".
 
 ---
 
@@ -347,10 +353,12 @@ php artisan tinker --execute="echo App\Models\User::count();"
 |----|---------------|-------|--------------------|----|
 | PR-18.1 | Listar usuarios | Login como propietario+ → `/admin/usuarios` | Tabla con todos los usuarios | ✅ |
 | PR-18.2 | Crear usuario | Clic "Crear" → llenar datos + rol → guardar | Usuario creado con rol asignado | ✅ |
-| PR-18.3 | Editar usuario | Clic "Editar" → modificar datos → guardar | Datos actualizados | |
-| PR-18.4 | Eliminar/desactivar usuario | Clic "Eliminar" → confirmar | Usuario eliminado o desactivado | |
+| PR-18.3 | Editar usuario | Clic "Editar" → modificar datos → guardar | Datos actualizados | ✅ |
+| PR-18.4 | Eliminar/desactivar usuario | Clic "Eliminar" → confirmar | Usuario eliminado o desactivado | ✅ |
 | PR-18.5 | Restricción por nivel | Propietario no puede crear admin | No aparece opción de rol admin | ✅ |
-| PR-18.6 | Filtrar por rol | Seleccionar filtro de rol | Solo muestra usuarios de ese rol | |
+| PR-18.6 | Filtrar por rol | Seleccionar filtro de rol | Solo muestra usuarios de ese rol | ✅ |
+
+> PR-18.2–18.4 verificados con un usuario desechable (`pwtest.editdelete@local.test`): creado, editado (nombre → "EditadoOK") y desactivado, confirmado en BD en cada paso. PR-18.6 confirmado al filtrar por email vía `?q=`.
 
 > Bug latente corregido (error #12): si se llegara a crear/editar un usuario con `rol_nuevo='admin'` (no alcanzable desde la UI actual, pero sí por request directo), la columna heredada `usuario.rol` rechazaba el valor `'ADMIN'` por un `CHECK constraint`. Ya se mapea a un valor legado válido.
 
@@ -362,12 +370,12 @@ php artisan tinker --execute="echo App\Models\User::count();"
 |----|---------------|-------|--------------------|----|
 | PR-19.1 | Ver árbol de menú | Login como admin → `/admin/menu` | Muestra ítems en estructura jerárquica | ✅ |
 | PR-19.2 | Crear ítem de menú | Clic "Crear" → llenar label, ruta, nivel, padre → guardar | Ítem creado y visible | ✅ |
-| PR-19.3 | Editar ítem de menú | Clic "Editar" → modificar → guardar | Ítem actualizado | |
-| PR-19.4 | Eliminar ítem de menú | Clic "Eliminar" → confirmar | Ítem eliminado, hijos reasignados o eliminados | |
-| PR-19.5 | Caché invalidado | Crear/editar/eliminar ítem | Menú se actualiza al recargar (caché limpiado) | |
+| PR-19.3 | Editar ítem de menú | Clic "Editar" → modificar → guardar | Ítem actualizado | ✅ |
+| PR-19.4 | Eliminar ítem de menú | Clic "Eliminar" → confirmar | Ítem eliminado, hijos reasignados o eliminados | ✅ |
+| PR-19.5 | Caché invalidado | Crear/editar/eliminar ítem | Menú se actualiza al recargar (caché limpiado) | ✅ |
 | PR-19.6 | Nivel mínimo funcional | Crear ítem con nivel 3 | Solo visible para propietario+ | |
 
-> **PR-19.2 a 19.4 no existían**: la página `Admin/Menu/Form.vue` faltaba por completo (error #13) — las rutas y el controlador existían pero al entrar a crear/editar rompía porque el componente Vue no existía. Se construyó la página (mismo patrón que `Productos/Form.vue`) y se agregaron los botones de Editar/Eliminar en el listado. PR-19.2 verificado creando un ítem real.
+> **PR-19.2 a 19.4 no existían**: la página `Admin/Menu/Form.vue` faltaba por completo (error #13) — las rutas y el controlador existían pero al entrar a crear/editar rompía porque el componente Vue no existía. Se construyó la página (mismo patrón que `Productos/Form.vue`) y se agregaron los botones de Editar/Eliminar en el listado. PR-19.2–19.5 verificados de punta a punta sobre un ítem de menú de prueba (creado, editado, confirmado visible de inmediato sin caché stale, y desactivado).
 
 ---
 

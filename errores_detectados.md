@@ -98,6 +98,14 @@ Este archivo registra los errores detectados durante las pruebas MVP.
 * **Problema**: En `AppLayout.vue`, `const carritoCount = ref(0)` nunca se actualizaba (comentario en el propio código: `// Se actualizará desde eventos`). El badge 🛒 del header nunca reflejaba la cantidad real de ítems en el carrito.
 * **Solución aplicada**: Se agregó `carritoCount` a los props globales compartidos por `HandleInertiaRequests` (suma de `cantidad` en `carrito_item` del usuario autenticado), y `AppLayout.vue` ahora lo lee como `computed(() => usePage().props.carritoCount ?? 0)`.
 
+## 16. Historial de pedidos, listado admin de pedidos y listado de inventario rotos por columna `created_at` inexistente (hallazgo nuevo, no listado originalmente)
+* **Estado:** ✅ Corregido y verificado
+* **Error message**: `SQLSTATE[42703]: Undefined column: 7 ERROR: no existe la columna «created_at» ... (SQL: select * from "pedido" order by "created_at" desc limit 15 offset 0)`
+* **Causa/Problema**: Tres controladores distintos ordenaban resultados con `->orderByDesc('created_at')`, pero las tablas heredadas `pedido` e `inventario` (igual que `usuario`, ver error #1) no tienen `created_at`/`updated_at` — usan una columna `fecha`. Esto rompía con Error 500 **tres pantallas completas**: el historial de pedidos del cliente (`/pedidos/historial`), el listado de pedidos del admin (`/admin/pedidos`) y el listado de movimientos de inventario (`/admin/inventario`).
+* **Por qué no se detectó antes**: en la verificación HTTP de la sesión 1 solo se comprobó el código `302` del *redirect* tras crear un pedido (que sí funcionaba), sin seguir la navegación hasta la página de destino real, que era la que fallaba. En la primera pasada de Playwright de la sesión 2, el script de pruebas tampoco esperó lo suficiente ni inspeccionó el contenido real de la página, por lo que PR-14.4, PR-15.1 y PR-17.1 quedaron marcados (incorrectamente) como ✅.
+* **Solución aplicada**: se cambió `orderByDesc('created_at')` por `orderByDesc('fecha')` en `app/Http/Controllers/Cliente/PedidoController.php` (método `historial`), `app/Http/Controllers/Admin/PedidoAdminController.php` (método `index`) y `app/Http/Controllers/Admin/InventarioController.php` (método `index`).
+* **Verificación**: con Playwright se confirmó que las tres pantallas ahora cargan y muestran datos reales (9 pedidos en `/admin/pedidos`, 12 movimientos en `/admin/inventario`, y el historial de un cliente recién registrado mostrando su pedido). También se probó el flujo completo de cambio de estado de un pedido (PENDIENTE → CONFIRMADO → ENVIADO → ENTREGADO), que dependía de poder listar pedidos para llegar al control.
+
 ---
 
 ## Cambios de código realizados — sesión 1
@@ -114,6 +122,7 @@ Este archivo registra los errores detectados durante las pruebas MVP.
 * `resources/js/Pages/Admin/Menu/Form.vue` (nuevo) + `Admin/Menu/Index.vue`: completar CRUD de menú dinámico (error #13).
 * `resources/js/app.js`: fallback global de imágenes rotas (error #14).
 * `app/Http/Middleware/HandleInertiaRequests.php` + `resources/js/Layouts/AppLayout.vue`: badge de carrito real (error #15).
+* `app/Http/Controllers/Cliente/PedidoController.php`, `app/Http/Controllers/Admin/PedidoAdminController.php`, `app/Http/Controllers/Admin/InventarioController.php`: `orderByDesc('created_at')` → `orderByDesc('fecha')` (error #16).
 * Usuarios de prueba creados para testing por rol: `test.admin@local.test`, `test.propietario@local.test`, `test.vendedor@local.test` (password `TestPass123!`) — quedan en la BD para pruebas futuras.
 
 ## Metodología de verificación

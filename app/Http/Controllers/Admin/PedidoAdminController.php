@@ -17,7 +17,7 @@ class PedidoAdminController extends Controller
             $query->where('estado', $request->estado);
         }
 
-        $pedidos = $query->orderByDesc('created_at')->paginate(15)->withQueryString();
+        $pedidos = $query->orderByDesc('fecha')->paginate(15)->withQueryString();
 
         return Inertia::render('Admin/Pedidos/Index', compact('pedidos'));
     }
