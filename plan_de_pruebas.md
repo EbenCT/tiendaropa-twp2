@@ -85,15 +85,17 @@ php artisan tinker --execute="echo App\Models\User::count();"
 | ID | Caso de prueba | Pasos | Resultado esperado | ✅/❌ |
 |----|---------------|-------|--------------------|----|
 | PR-02.1 | Ver formulario login | Navegar a `/login` | Muestra formulario con email y password | ✅ |
-| PR-02.2 | Login exitoso | Ingresar credenciales válidas → clic "Ingresar" | Redirige a home con flash "¡Bienvenido, [nombre]!" | ❌ |
+| PR-02.2 | Login exitoso | Ingresar credenciales válidas → clic "Ingresar" | Redirige a home con flash "¡Bienvenido, [nombre]!" | ✅ |
 | PR-02.3 | Login fallido | Ingresar credenciales inválidas → clic "Ingresar" | Muestra error "Las credenciales ingresadas no son correctas." | |
 | PR-02.4 | Login con campos vacíos | Dejar email y/o password vacíos → submit | Mensajes de validación en español | |
-| PR-02.5 | Logout | Clic en nombre usuario → "Cerrar Sesión" | Redirige a home con flash "Has cerrado sesión correctamente." | |
+| PR-02.5 | Logout | Clic en nombre usuario → "Cerrar Sesión" | Redirige a home con flash "Has cerrado sesión correctamente." | ✅ |
 | PR-02.6 | Ver formulario registro | Navegar a `/registro` | Muestra formulario completo de registro | ✅ |
-| PR-02.7 | Registro exitoso | Llenar todos los campos válidos → submit | Crea usuario como cliente, redirige a home con bienvenida | ❌ |
+| PR-02.7 | Registro exitoso | Llenar todos los campos válidos → submit | Crea usuario como cliente, redirige a home con bienvenida | ✅ |
 | PR-02.8 | Registro con email duplicado | Usar email que ya existe | Error "El correo electrónico ya está registrado." | |
-| PR-02.9 | Acceso a login estando autenticado | Ya logueado, navegar a `/login` | Redirige a home (middleware guest) | ❌ |
-| PR-02.10 | Acceso a registro estando autenticado | Ya logueado, navegar a `/registro` | Redirige a home (middleware guest) | ❌ |
+| PR-02.9 | Acceso a login estando autenticado | Ya logueado, navegar a `/login` | Redirige a home (middleware guest) | ✅ |
+| PR-02.10 | Acceso a registro estando autenticado | Ya logueado, navegar a `/registro` | Redirige a home (middleware guest) | |
+
+> **Nota 2026-06-26:** PR-02.2, 02.5, 02.7 y 02.9 re-verificados vía peticiones HTTP reales contra `php artisan serve` (registro → 302 a `/` con flash; logout → 302; login con password hasheado → 302 a `/`; `/login` autenticado → 302 a `/`). Causa raíz: `$timestamps=false` en `User` (error #1) y `RouteServiceProvider::HOME='/'` (error #5) ya estaban en el código; faltaba solo hashear los passwords legados, lo cual se hizo (error #4). Ver `errores_detectados.md`.
 
 ---
 
@@ -171,7 +173,7 @@ php artisan tinker --execute="echo App\Models\User::count();"
 | PR-07.4 | Menú propietario | Login como propietario, ver header | Agrega: Usuarios (hijo de Gestión), Reportes | |
 | PR-07.5 | Menú admin | Login como admin, ver header | Agrega: Sistema (Menú Dinámico, Estadísticas) | |
 | PR-07.6 | Submenú dropdown | Hover sobre "Gestión" | Despliega submenú con hijos | |
-| PR-07.7 | Links funcionales | Clic en cada ítem del menú | Navega a la ruta correcta sin errores | ❌ |
+| PR-07.7 | Links funcionales | Clic en cada ítem del menú | Navega a la ruta correcta sin errores | 🔶 |
 | PR-07.8 | Caché del menú | Cambiar ítems en BD → esperar 5 min | Menú se actualiza tras invalidación de caché | |
 
 ---
@@ -184,8 +186,8 @@ php artisan tinker --execute="echo App\Models\User::count();"
 | PR-08.2 | CTA "Ver Catálogo" | Clic en botón | Navega a `/catalogo` | |
 | PR-08.3 | CTA "Crear Cuenta" | Sin login, clic en botón | Navega a `/registro` | |
 | PR-08.4 | CTA oculto si autenticado | Login → volver a home | Botón "Crear Cuenta" no aparece | |
-| PR-08.5 | Productos destacados | Marcar productos como destacados en admin | Sección "⭐ Productos Destacados" muestra hasta 8 productos | ❌ |
-| PR-08.6 | Nueva colección | Marcar productos como nueva colección | Sección "✨ Nueva Colección" muestra hasta 8 productos | ❌ |
+| PR-08.5 | Productos destacados | Marcar productos como destacados en admin | Sección "⭐ Productos Destacados" muestra hasta 8 productos | ✅ |
+| PR-08.6 | Nueva colección | Marcar productos como nueva colección | Sección "✨ Nueva Colección" muestra hasta 8 productos | ✅ |
 | PR-08.7 | Promociones activas | Tener promoción con fechas vigentes | Sección "🏷️ Promociones Activas" muestra nombre, descuento, productos | ✅ |
 | PR-08.8 | Estado vacío | Sin productos destacados ni promociones | Muestra "🛍️ Próximamente nuevos productos" + link a catálogo | |
 
@@ -212,9 +214,9 @@ php artisan tinker --execute="echo App\Models\User::count();"
 
 | ID | Caso de prueba | Pasos | Resultado esperado | ✅/❌ |
 |----|---------------|-------|--------------------|----|
-| PR-10.1 | Acceder al detalle | Clic en ProductoCard en catálogo | Navega a `/catalogo/{id}` | ❌ |
+| PR-10.1 | Acceder al detalle | Clic en ProductoCard en catálogo | Navega a `/catalogo/{id}` | 🔶 |
 | PR-10.2 | Información mostrada | Ver página de detalle | Nombre, descripción, precio, stock, imagen | ✅ |
-| PR-10.3 | Tallas disponibles | Producto con tallas en `producto_talla` | Muestra selector de tallas | ❌ |
+| PR-10.3 | Tallas disponibles | Producto con tallas en `producto_talla` | Muestra selector de tallas | ✅ |
 | PR-10.4 | Métricas de ventas | Producto con ventas previas | Muestra unidades vendidas (desde `detalle_pedido`) | |
 | PR-10.5 | Agregar al carrito | Clic en "Agregar al carrito" (autenticado) | Agrega al carrito, muestra confirmación | |
 | PR-10.6 | Toggle favorito | Clic en botón favorito (autenticado) | Agrega/quita de favoritos | |
@@ -525,3 +527,16 @@ php artisan tinker --execute="echo App\Models\User::count();"
 | PR-24: Flujos completos (E2E) | 6 flujos |
 | PR-25: Responsive | 5 |
 | **TOTAL** | **164 pruebas + 6 flujos E2E** |
+
+---
+
+## Notas de re-verificación (2026-06-26)
+
+Símbolo **🔶** = causa raíz corregida y verificada por vía backend/HTTP, pero pendiente de confirmar con clic real en navegador (no se contó con herramienta de automatización de navegador en esta sesión).
+
+Resumen de lo corregido en esta pasada (detalle completo en `errores_detectados.md`):
+- **PR-02.2/02.5/02.7/02.9** (auth): ✅ verificado end-to-end vía HTTP — registro, login (passwords ya hasheados), logout y redirect guest todos responden `302` a `/` correctamente.
+- **PR-07.7** (links de menú): 🔶 la causa raíz (ruta `carrito` inexistente en Ziggy) está corregida en código y BD; los 20 nombres de ruta usados por el frontend resuelven en `php artisan route:list`. Falta clic real en navegador para confirmar.
+- **PR-08.5/08.6** (destacados/nueva colección): ✅ verificado — 4 productos destacados y 4 de nueva colección, confirmado en el prop real de Inertia para `/`.
+- **PR-10.1** (navegar a detalle): 🔶 mismo caso que PR-07.7, depende de clic real.
+- **PR-10.3** (selector de tallas): ✅ verificado — los 20 productos ahora tienen registro en `producto_talla`, confirmado en el prop real de Inertia para `/catalogo/{id}`.

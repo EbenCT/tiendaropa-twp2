@@ -13,6 +13,9 @@ class DatabaseSeeder extends Seeder
             TallaSeeder::class,
             MenuItemSeeder::class,
             AsignarRolesUsuariosSeeder::class,
+            HashPasswordsSeeder::class,
+            ProductoTallaSeeder::class,
+            DestacadosSeeder::class,
         ]);
     }
 }

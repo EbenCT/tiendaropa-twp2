@@ -34,6 +34,13 @@ class TallaSeeder extends Seeder
             ['codigo' => '41', 'descripcion' => 'Calzado talla 41', 'tipo' => 'calzado'],
             ['codigo' => '42', 'descripcion' => 'Calzado talla 42', 'tipo' => 'calzado'],
             ['codigo' => '43', 'descripcion' => 'Calzado talla 43', 'tipo' => 'calzado'],
+            // Pantalón (tallas numéricas heredadas del proyecto Java)
+            ['codigo' => '28', 'descripcion' => 'Pantalón talla 28', 'tipo' => 'pantalon'],
+            ['codigo' => '30', 'descripcion' => 'Pantalón talla 30', 'tipo' => 'pantalon'],
+            ['codigo' => '32', 'descripcion' => 'Pantalón talla 32', 'tipo' => 'pantalon'],
+            ['codigo' => '34', 'descripcion' => 'Pantalón talla 34', 'tipo' => 'pantalon'],
+            ['codigo' => '36', 'descripcion' => 'Pantalón talla 36', 'tipo' => 'pantalon'],
+            ['codigo' => '38', 'descripcion' => 'Pantalón talla 38', 'tipo' => 'pantalon'],
         ];
 
         foreach ($tallas as $t) {
