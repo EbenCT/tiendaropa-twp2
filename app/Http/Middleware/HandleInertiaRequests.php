@@ -62,6 +62,11 @@ class HandleInertiaRequests extends Middleware
                 'error'   => fn () => $request->session()->get('error'),
                 'info'    => fn () => $request->session()->get('info'),
             ],
+
+            // Llave pública de Stripe (no sensible, diseñada para el navegador)
+            'stripe' => [
+                'publishableKey' => config('services.stripe.key'),
+            ],
         ]);
     }
 

@@ -551,6 +551,33 @@ php artisan tinker --execute="echo App\Models\User::count();"
 
 ---
 
+## 27. PR-26: Pagos con Stripe
+
+> Implementación completa (código revisado: `php -l` en todos los archivos PHP nuevos, `npm run
+> build` sin errores, rutas registradas con `route:list`, comando registrado con
+> `artisan list pagos` y `schedule:list`, singleton de `StripeClient` resuelto correctamente vía
+> `tinker`). **Pendiente de verificación end-to-end en navegador**: requiere que el usuario
+> complete `STRIPE_KEY`/`STRIPE_SECRET`/`STRIPE_WEBHOOK_SECRET` con llaves reales de una cuenta
+> Stripe de prueba en `.env`, e instale Stripe CLI para el webhook local. Sin esas llaves, ningún
+> caso de esta sección puede marcarse ✅ todavía (se haría con tarjetas de prueba oficiales:
+> `4242 4242 4242 4242` éxito, `4000 0027 6000 3184` fuerza 3DS, `4000 0000 0000 9995` fondos
+> insuficientes).
+
+| ID | Caso de prueba | Pasos | Resultado esperado | ✅/❌/⏸️ |
+|----|---------------|-------|--------------------|----|
+| PR-26.1 | Pago único exitoso | Crear pedido → ir a /pedidos/{id}/pagar → "Pagar ahora" → tarjeta 4242... en Stripe Checkout | Redirige a la app, `Pedido.estado`→CONFIRMADO, `Pago.stripe_status`='succeeded' visible en Show.vue | ⏸️ |
+| PR-26.2 | Pago único con 3D Secure | Igual que 26.1 con tarjeta 4000 0027 6000 3184 | Stripe Checkout muestra el challenge 3DS y lo resuelve sin código propio | ⏸️ |
+| PR-26.3 | Pago cancelado por el usuario | En Stripe Checkout, volver atrás | Redirige a `pedidos.pago.cancelado`, pedido sigue PENDIENTE sin Pago succeeded | ⏸️ |
+| PR-26.4 | QR de pago único | En la pestaña "Pago único", verificar que se pinta un QR | Al escanear desde celular en la misma red, abre el mismo Checkout | ⏸️ |
+| PR-26.5 | Guardar método de pago | /metodos-pago → Agregar tarjeta → Stripe Elements → confirmar | Aparece en la lista con brand+last4 tras el webhook `setup_intent.succeeded` | ⏸️ |
+| PR-26.6 | Marcar método principal / eliminar | En /metodos-pago, marcar principal y eliminar una tarjeta | Solo una marcada "Principal"; al eliminar, desaparece de la lista pero queda `activo=false` en BD | ⏸️ |
+| PR-26.7 | Plan de cuotas (2/3/6) | En "Plan de cuotas", elegir N cuotas + tarjeta guardada → confirmar | Se crean N filas `Cuota` con montos/fechas correctos, cuota 1 cobrada de inmediato | ⏸️ |
+| PR-26.8 | Cobro automático de cuota vencida | Forzar `fecha_vencimiento` pasada en una cuota (tinker) → `php artisan pagos:cobrar-cuotas` | Cobro off-session exitoso, `Cuota.estado`='PAGADO' | ⏸️ |
+| PR-26.9 | Cuota con cobro fallido | Igual que 26.8 con tarjeta de fondos insuficientes guardada | Cuota queda PENDIENTE (BD no admite estado "fallida"), se reintenta al día siguiente | ⏸️ |
+| PR-26.10 | Visibilidad admin de pagos/cuotas | Como vendedor, ver /admin/pedidos/{id} | Sección "Pago" visible en solo lectura, sin botones de acción | ⏸️ |
+
+---
+
 ## Resumen de casos de prueba
 
 | Sección | Cantidad de pruebas |
@@ -580,7 +607,8 @@ php artisan tinker --execute="echo App\Models\User::count();"
 | PR-23: Validaciones en español | 7 |
 | PR-24: Flujos completos (E2E) | 6 flujos |
 | PR-25: Responsive | 5 |
-| **TOTAL** | **164 pruebas + 6 flujos E2E** |
+| PR-26: Pagos con Stripe (⏸️ pendiente de llaves reales) | 10 |
+| **TOTAL** | **174 pruebas + 6 flujos E2E** |
 
 ---
 

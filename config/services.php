@@ -30,4 +30,12 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'stripe' => [
+        'key'            => env('STRIPE_KEY'),
+        'secret'         => env('STRIPE_SECRET'),
+        'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
+        'currency'       => env('STRIPE_CURRENCY', 'usd'),
+        'bob_usd_rate'   => (float) env('STRIPE_BOB_USD_RATE', 6.96),
+    ],
+
 ];

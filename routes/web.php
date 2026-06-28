@@ -8,6 +8,9 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Cliente\CarritoController;
 use App\Http\Controllers\Cliente\FavoritoController;
 use App\Http\Controllers\Cliente\PedidoController;
+use App\Http\Controllers\Cliente\PagoController;
+use App\Http\Controllers\Cliente\MetodoPagoController;
+use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\Admin\ProductoAdminController;
 use App\Http\Controllers\Admin\InventarioController;
 use App\Http\Controllers\Admin\PedidoAdminController;
@@ -27,6 +30,9 @@ Route::get('/catalogo',      [CatalogoController::class, 'index'])->name('catalo
 Route::get('/promociones',   [CatalogoController::class, 'index'])->name('promociones');
 Route::get('/catalogo/{id}', [CatalogoController::class, 'show'])->name('catalogo.show');
 Route::get('/buscar',        [BuscadorController::class, 'buscar'])->name('buscar');
+
+// Webhook de Stripe — sin sesión/CSRF, protegido por verificación de firma en el controlador
+Route::post('/stripe/webhook', [StripeWebhookController::class, 'handle'])->name('stripe.webhook');
 
 // ═══════════════════════════════════════════════════════════════
 // AUTH
@@ -68,7 +74,20 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/crear',         [PedidoController::class, 'create'])->name('create');
         Route::post('/',             [PedidoController::class, 'store'])->name('store');
         Route::get('/historial',     [PedidoController::class, 'historial'])->name('historial');
+        Route::get('/pago/exito',     [PagoController::class, 'exito'])->name('pago.exito');
+        Route::get('/pago/cancelado', [PagoController::class, 'cancelado'])->name('pago.cancelado');
         Route::get('/{id}',          [PedidoController::class, 'show'])->name('show');
+        Route::get('/{id}/pagar',         [PagoController::class, 'mostrarPago'])->name('pagar');
+        Route::post('/{id}/pagar/unico',  [PagoController::class, 'iniciarPagoUnico'])->name('pagar.unico');
+        Route::post('/{id}/pagar/cuotas', [PagoController::class, 'iniciarPagoCuotas'])->name('pagar.cuotas');
+    });
+
+    // Métodos de pago guardados (Stripe)
+    Route::prefix('metodos-pago')->name('metodos-pago.')->group(function () {
+        Route::get('/',                 [MetodoPagoController::class, 'index'])->name('index');
+        Route::post('/setup-intent',    [MetodoPagoController::class, 'crearSetupIntent'])->name('setup-intent');
+        Route::patch('/{id}/principal', [MetodoPagoController::class, 'marcarPrincipal'])->name('principal');
+        Route::delete('/{id}',          [MetodoPagoController::class, 'eliminar'])->name('eliminar');
     });
 });
 

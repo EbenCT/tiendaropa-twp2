@@ -97,13 +97,17 @@
 - [x] `Admin/Estadisticas/Index.vue` (dashboard con barras CSS)
 - [x] `Admin/Reportes/Index.vue` (gráfico barras mensuales + resumen anual)
 
-## FASE 13 – Pagos con Stripe ⏸️ PENDIENTE
-- [ ] Instalar `stripe/stripe-php` + `@stripe/stripe-js`
-- [ ] `PagoController` (pago único + plan de cuotas)
-- [ ] Migración aditiva en tabla `pago` (stripe_payment_intent_id, stripe_status, metodo)
-- [ ] `Pagos/Checkout.vue` con Stripe Elements
-- [ ] Webhooks Stripe para confirmar pagos asíncronos
-- [ ] Vincular tabla `metodo_pago_usuario` (ya existe, vacía)
+## FASE 13 – Pagos con Stripe ✅ (modo TEST)
+- [x] Instalar `stripe/stripe-php` + `@stripe/stripe-js` + `qrcode`
+- [x] Migración aditiva en tabla `pago` (stripe_payment_intent_id, stripe_status, metodo)
+- [x] Capa de servicios `App\Services\Stripe\` (PagoUnicoService, CuotasService, MetodoPagoService, WebhookHandlerService)
+- [x] `Cliente\PagoController` (pago único con QR + plan de cuotas 2/3/6) y `Cliente\MetodoPagoController`
+- [x] `StripeWebhookController` + exclusión CSRF (`stripe/webhook`)
+- [x] `Pedidos/Pagar.vue` + `MetodosPago/Index.vue` (Stripe Elements)
+- [x] Secciones de pago en `Pedidos/Show.vue`, `Pedidos/Historial.vue`, `Admin/Pedidos/Show.vue` (solo lectura)
+- [x] Comando programado `pagos:cobrar-cuotas` (cobro off-session de cuotas vencidas) + `Kernel::schedule()`
+- [x] Vincular tabla `metodo_pago_usuario` (modelo reescrito, en uso)
+- [ ] Pendiente del usuario: completar `STRIPE_KEY`/`STRIPE_SECRET`/`STRIPE_WEBHOOK_SECRET` reales en `.env` y probar end-to-end con Stripe CLI
 
 ---
 
@@ -111,13 +115,15 @@
 
 | Métrica | Valor |
 |---------|-------|
-| Fases completadas | 12 de 13 |
-| Controladores | 17 |
+| Fases completadas | 13 de 13 |
+| Controladores | 20 |
 | Modelos Eloquent | 20 |
-| Migraciones | 11 |
+| Servicios (`App\Services\Stripe`) | 4 |
+| Migraciones | 12 |
 | Seeders | 7 |
-| Vistas Vue | 21 páginas + 1 layout + 1 componente |
+| Comandos Artisan | 1 (`pagos:cobrar-cuotas`) |
+| Vistas Vue | 23 páginas + 1 layout + 1 componente |
 | Composables | 1 (useTema.js) |
 | Middleware custom | 3 (CheckRole, TrackPageVisit, HandleInertiaRequests) |
-| Rutas | 45+ |
+| Rutas | 55+ |
 | Temas CSS | 3 × 2 modos = 6 combinaciones |

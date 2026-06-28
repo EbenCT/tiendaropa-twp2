@@ -22,9 +22,10 @@ class MenuItemSeeder extends Seeder
             ['label' => 'Mi Carrito',  'route_name' => 'carrito.index', 'icon' => 'shopping-cart', 'role_nivel_minimo' => 1, 'orden' => 4],
             ['label' => 'Favoritos',   'route_name' => 'favoritos.index', 'icon' => 'heart',      'role_nivel_minimo' => 1, 'orden' => 5],
             ['label' => 'Mis Pedidos', 'route_name' => 'pedidos.historial', 'icon' => 'package', 'role_nivel_minimo' => 1, 'orden' => 6],
+            ['label' => 'Métodos de Pago', 'route_name' => 'metodos-pago.index', 'icon' => 'credit-card', 'role_nivel_minimo' => 1, 'orden' => 7],
 
             // ── Vendedor ──────────────────────────────────────────────
-            ['label' => 'Gestión',     'route_name' => null,           'icon' => 'settings',   'role_nivel_minimo' => 2, 'orden' => 7],
+            ['label' => 'Gestión',     'route_name' => null,           'icon' => 'settings',   'role_nivel_minimo' => 2, 'orden' => 8],
 
             // ── Admin ─────────────────────────────────────────────────
             ['label' => 'Reportes',    'route_name' => 'admin.reportes', 'icon' => 'bar-chart', 'role_nivel_minimo' => 3, 'orden' => 9],

@@ -9,9 +9,14 @@
             <div class="pedido-header">
               <div>
                 <span class="pedido-id">Pedido #{{ pedido.id }}</span>
-                <span class="pedido-fecha">{{ formatFecha(pedido.created_at) }}</span>
+                <span class="pedido-fecha">{{ formatFecha(pedido.fecha) }}</span>
               </div>
-              <span :class="['estado-badge', `estado-${pedido.estado?.toLowerCase()}`]">{{ pedido.estado }}</span>
+              <div class="pedido-badges">
+                <span :class="['estado-badge', `estado-${pedido.estado?.toLowerCase()}`]">{{ pedido.estado }}</span>
+                <span v-if="pagoDe(pedido)" :class="['estado-badge', pagoDe(pedido).stripe_status === 'succeeded' ? 'estado-entregado' : 'estado-pendiente']">
+                  {{ pagoDe(pedido).stripe_status === 'succeeded' ? 'Pagado' : 'Pago pendiente' }}
+                </span>
+              </div>
             </div>
             <div class="pedido-detalles">
               <div v-for="det in pedido.detalles" :key="det.id" class="pedido-detalle">
@@ -21,7 +26,7 @@
               </div>
             </div>
             <div class="pedido-footer">
-              <span class="pedido-total">Total: <strong>Bs. {{ Number(pedido.total || calcularTotal(pedido)).toFixed(2) }}</strong></span>
+              <span class="pedido-total">Total: <strong>Bs. {{ Number(pedido.venta?.total || calcularTotal(pedido)).toFixed(2) }}</strong></span>
               <Link :href="route('pedidos.show', pedido.id)" class="btn btn-outline btn-sm">Ver Detalle</Link>
             </div>
           </div>
@@ -59,6 +64,10 @@ function formatFecha(fecha) {
 function calcularTotal(pedido) {
   return (pedido.detalles || []).reduce((sum, d) => sum + (d.subtotal || d.cantidad * d.precio_unitario), 0)
 }
+
+function pagoDe(pedido) {
+  return (pedido.venta?.pagos || [])[0] || null
+}
 </script>
 
 <style scoped>
@@ -67,6 +76,7 @@ function calcularTotal(pedido) {
 .pedidos-list { display:flex; flex-direction:column; gap:1rem; }
 .pedido-card { }
 .pedido-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; }
+.pedido-badges { display:flex; gap:0.4rem; }
 .pedido-id { font-weight:700; font-size:1rem; margin-right:0.75rem; }
 .pedido-fecha { font-size:0.8rem; color:var(--text-secondary); }
 .estado-badge { padding:0.2rem 0.75rem; border-radius:var(--radius-pill); font-size:0.75rem; font-weight:700; text-transform:uppercase; }

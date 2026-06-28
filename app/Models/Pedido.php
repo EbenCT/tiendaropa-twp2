@@ -14,4 +14,11 @@ class Pedido extends Model
     public function usuario()  { return $this->belongsTo(User::class, 'usuario_id'); }
     public function detalles() { return $this->hasMany(DetallePedido::class, 'pedido_id'); }
     public function venta()    { return $this->hasOne(Venta::class, 'pedido_id'); }
+
+    public function confirmarPorPago(): void
+    {
+        if ($this->estado === 'PENDIENTE') {
+            $this->update(['estado' => 'CONFIRMADO']);
+        }
+    }
 }

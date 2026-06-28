@@ -24,7 +24,7 @@ class PedidoAdminController extends Controller
 
     public function show(int $id)
     {
-        $pedido = Pedido::with(['usuario', 'detalles.producto.imagenPrincipal', 'venta.pagos'])
+        $pedido = Pedido::with(['usuario', 'detalles.producto.imagenPrincipal', 'venta.pagos.cuotas'])
             ->findOrFail($id);
 
         return Inertia::render('Admin/Pedidos/Show', compact('pedido'));

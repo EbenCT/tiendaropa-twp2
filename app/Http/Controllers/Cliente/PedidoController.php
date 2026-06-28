@@ -84,14 +84,14 @@ class PedidoController extends Controller
         // Vaciar carrito
         CarritoItem::where('usuario_id', $user->id)->delete();
 
-        return redirect()->route('pedidos.historial')
-            ->with('success', '¡Pedido #' . $pedido->id . ' creado exitosamente!');
+        return redirect()->route('pedidos.pagar', $pedido->id)
+            ->with('success', '¡Pedido #' . $pedido->id . ' creado! Completa tu pago para confirmarlo.');
     }
 
     public function historial(Request $request)
     {
         $pedidos = Pedido::where('usuario_id', $request->user()->id)
-            ->with(['detalles.producto'])
+            ->with(['detalles.producto', 'venta.pagos'])
             ->orderByDesc('fecha')
             ->paginate(10);
 
@@ -101,7 +101,7 @@ class PedidoController extends Controller
     public function show(Request $request, int $id)
     {
         $pedido = Pedido::where('usuario_id', $request->user()->id)
-            ->with(['detalles.producto.imagenPrincipal', 'venta.pagos'])
+            ->with(['detalles.producto.imagenPrincipal', 'venta.pagos.cuotas'])
             ->findOrFail($id);
 
         return Inertia::render('Pedidos/Show', compact('pedido'));

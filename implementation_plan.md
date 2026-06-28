@@ -238,18 +238,45 @@ resources/css/app.css  (390 líneas)
 | 10 | Pedidos (cliente + admin) | ✅ Completa |
 | 11 | Gestión Admin (productos, inventario, menú, usuarios) | ✅ Completa |
 | 12 | Estadísticas y Reportes | ✅ Completa |
-| 13 | Pagos con Stripe | ⏸️ Pendiente |
+| 13 | Pagos con Stripe | ✅ Completa (modo TEST) |
 
 ---
 
-## Pendiente – Fase 13: Pagos con Stripe
+## Fase 13: Pagos con Stripe — completada
 
-- Instalar `stripe/stripe-php` + `@stripe/stripe-js`
-- `PagoController` (pago único + plan de cuotas)
-- Migración aditiva en tabla `pago` (stripe_payment_intent_id, stripe_status, metodo)
-- `Pagos/Checkout.vue` con Stripe Elements
-- Webhooks Stripe para confirmar pagos asíncronos
-- Tabla `metodo_pago_usuario` ya existe en BD (vacía)
+Integración Stripe **en modo TEST permanente** (Bolivia no es país soportado por Stripe para
+cuentas live/payouts reales — ver `plan_pagos_stripe.md` para el detalle de la investigación).
+Cubre pago único, plan de cuotas y métodos de pago guardados, vía una capa de servicios nueva
+`App\Services\Stripe\` (primera vez que el proyecto usa este patrón):
+
+- **Migración** `2026_06_18_100012_add_stripe_columns_to_pago_table.php`: agrega
+  `stripe_payment_intent_id`, `stripe_status`, `metodo` a `pago` (ALTER aditivo).
+- **Modelo `MetodoPagoUsuario`** reescrito (antes era un stub vacío).
+- **Servicios**: `PagoUnicoService` (Stripe Checkout hospedado), `CuotasService` (2/3/6 cuotas sin
+  interés, mínimo Bs. 50/cuota, cobro off-session de cuotas futuras), `MetodoPagoService`
+  (Customer + SetupIntent + tarjetas guardadas), `WebhookHandlerService` (única fuente de verdad
+  de éxito/fracaso de pagos).
+- **Controladores**: `Cliente/PagoController`, `Cliente/MetodoPagoController`,
+  `StripeWebhookController` (ruta pública `/stripe/webhook`, excluida de CSRF).
+- **Comando programado** `pagos:cobrar-cuotas` (`app/Console/Commands/CobrarCuotasVencidas.php`),
+  registrado en `Kernel::schedule()->daily()`, cobra cuotas vencidas con la tarjeta principal.
+- **Frontend**: `Pedidos/Pagar.vue` (toggle pago único/cuotas + QR del Checkout vía librería
+  `qrcode`), `MetodosPago/Index.vue` (gestión de tarjetas vía Stripe Elements), secciones de pago
+  agregadas en `Pedidos/Show.vue`, `Pedidos/Historial.vue` y `Admin/Pedidos/Show.vue` (solo lectura).
+- **`Pedido.estado`** se mantiene en `PENDIENTE` durante el pago, pasa a `CONFIRMADO` solo cuando
+  el webhook confirma éxito (`Pedido::confirmarPorPago()`).
+
+**Hallazgos de CHECK constraints aplicados** (ver `db_analysis.md`): `pago.modalidad` solo acepta
+`CONTADO`/`CREDITO` (no `unico`/`cuotas`), `pago.venta_id` es UNIQUE (una sola fila `Pago` por
+venta, vía `updateOrCreate`), `cuota.estado` solo acepta `PENDIENTE`/`PAGADO` (sin `FALLIDA` — una
+cuota fallida queda `PENDIENTE` para reintento automático al día siguiente).
+
+**Pendiente para que funcione end-to-end**: completar `STRIPE_KEY`/`STRIPE_SECRET`/
+`STRIPE_WEBHOOK_SECRET` en `.env` con las llaves reales de una cuenta Stripe de prueba, e instalar
+Stripe CLI para probar el webhook localmente (`stripe listen --forward-to localhost:8000/stripe/webhook`).
+Ver `plan_pagos_stripe.md` para el detalle completo de la arquitectura y la investigación de
+alternativas bolivianas (PagosNet/EBANX, Circle.bo, dLocal, PagoFácil Bolivia) para un eventual
+modo producción real.
 
 ---
 

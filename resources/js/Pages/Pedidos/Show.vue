@@ -10,7 +10,7 @@
             <div class="card">
               <div class="show-header">
                 <span :class="['estado-badge', `estado-${pedido.estado?.toLowerCase()}`]">{{ pedido.estado }}</span>
-                <span class="show-fecha">{{ formatFecha(pedido.created_at) }}</span>
+                <span class="show-fecha">{{ formatFecha(pedido.fecha) }}</span>
               </div>
 
               <h3 class="section-subtitle">Productos</h3>
@@ -36,7 +36,35 @@
             </div>
             <div class="card" style="margin-top:1rem">
               <h3>Total del Pedido</h3>
-              <p class="show-total">Bs. {{ Number(pedido.total || calcTotal()).toFixed(2) }}</p>
+              <p class="show-total">Bs. {{ Number(pedido.venta?.total || calcTotal()).toFixed(2) }}</p>
+            </div>
+
+            <div class="card" style="margin-top:1rem">
+              <h3>Pago</h3>
+              <template v-if="pago">
+                <span :class="['estado-badge', pago.stripe_status === 'succeeded' ? 'estado-entregado' : 'estado-pendiente']">
+                  {{ pago.stripe_status === 'succeeded' ? 'Pagado' : (pago.stripe_status === 'failed' ? 'Fallido' : 'Pendiente') }}
+                </span>
+
+                <table v-if="pago.modalidad === 'CREDITO' && pago.cuotas?.length" class="cuotas-table">
+                  <thead>
+                    <tr><th>Cuota</th><th>Monto</th><th>Vence</th><th>Estado</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="c in pago.cuotas" :key="c.id">
+                      <td>{{ c.num_cuota }}</td>
+                      <td>Bs. {{ Number(c.monto).toFixed(2) }}</td>
+                      <td>{{ formatFecha(c.fecha_vencimiento) }}</td>
+                      <td>{{ c.estado }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </template>
+              <p v-else class="hint">Aún no se inició un pago para este pedido.</p>
+
+              <Link v-if="pago?.stripe_status !== 'succeeded'" :href="route('pedidos.pagar', pedido.id)" class="btn btn-primary btn-full" style="margin-top:1rem">
+                {{ pago ? 'Reintentar pago' : 'Pagar ahora' }}
+              </Link>
             </div>
           </div>
         </div>
@@ -48,10 +76,13 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue'
 import { Link } from '@inertiajs/vue3'
+import { computed } from 'vue'
 
 const props = defineProps({
   pedido: { type: Object, required: true },
 })
+
+const pago = computed(() => (props.pedido.venta?.pagos || [])[0] || null)
 
 function formatFecha(f) { return new Date(f).toLocaleDateString('es-BO', { year:'numeric', month:'long', day:'numeric' }) }
 function calcTotal() { return (props.pedido.detalles || []).reduce((s, d) => s + (d.subtotal || d.cantidad * d.precio_unitario), 0) }
@@ -79,5 +110,9 @@ function calcTotal() { return (props.pedido.detalles || []).reduce((s, d) => s +
 .estado-confirmado { background:color-mix(in srgb, var(--color-info) 20%, var(--bg-card)); color:var(--color-info); }
 .estado-enviado { background:color-mix(in srgb, var(--color-primary) 20%, var(--bg-card)); color:var(--color-primary); }
 .estado-entregado { background:color-mix(in srgb, var(--color-success) 20%, var(--bg-card)); color:var(--color-success); }
+.hint { color:var(--text-secondary); font-size:0.875rem; }
+.btn-full { width:100%; justify-content:center; padding:0.65rem; display:flex; }
+.cuotas-table { width:100%; margin-top:1rem; font-size:0.85rem; border-collapse:collapse; }
+.cuotas-table th, .cuotas-table td { text-align:left; padding:0.4rem 0.3rem; border-bottom:1px solid var(--border-color); }
 @media (max-width:768px) { .show-layout { grid-template-columns:1fr; } }
 </style>

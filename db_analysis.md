@@ -19,7 +19,7 @@ Total: **21 tablas** (13 originales del proyecto Java + 8 nuevas creadas por mig
 | `cuota` | 7 | ✅ Reutilizada (plan de pagos) | `Cuota` |
 | `detalle_pedido` | 21 | ✅ Reutilizada sin cambios | `DetallePedido` |
 | `inventario` | 14 | ✅ Reutilizada (movimientos stock, técnica PEPS/UEPS/Promedio — ver nota de CHECK constraints abajo) | `Inventario` |
-| `pago` | 4 | ✅ Reutilizada (columnas Stripe pendientes) | `Pago` |
+| `pago` | 4 | ✅ Reutilizada (+columnas Stripe agregadas) | `Pago` |
 | `pedido` | 10 | ✅ Reutilizada sin cambios (sin `created_at`/`updated_at`, usa `fecha`) | `Pedido` |
 | `producto` | 21 | ✅ Adaptada (+`destacado`, +`es_nueva_coleccion`) | `Producto` |
 | `producto_promocion` | 6 | ✅ Reutilizada (pivot producto ↔ promoción) | — (relación M:M) |
@@ -60,7 +60,7 @@ Total: **21 tablas** (13 originales del proyecto Java + 8 nuevas creadas por mig
 | `favorito` | 1 | Productos favoritos por usuario (UNIQUE usuario+producto) | `100008_create_favorito_table` |
 | `menu_item` | 17 | Menú dinámico con jerarquía padre-hijo y nivel mínimo | `100009_create_menu_item_table` |
 | `page_visit` | 32 | Contador de visitas por URL (UNIQUE page_url) | `100010_create_page_visit_table` |
-| `metodo_pago_usuario` | 0 | Métodos de pago Stripe (preparada, vacía) | `100011_create_metodo_pago_usuario_table` |
+| `metodo_pago_usuario` | 0 | Métodos de pago Stripe (modelo y servicios conectados, en uso) | `100011_create_metodo_pago_usuario_table` |
 
 ---
 
@@ -97,10 +97,29 @@ Total: **21 tablas** (13 originales del proyecto Java + 8 nuevas creadas por mig
 
 ---
 
-## Pendiente para tabla `pago` (Fase 13 – Stripe)
+## Fase 13 (Stripe) — columnas agregadas a `pago`
+
+Migración `2026_06_18_100012_add_stripe_columns_to_pago_table.php` (ALTER aditivo, aplicada):
 
 ```
-AGREGAR:  stripe_payment_intent_id (varchar, nullable)
-AGREGAR:  stripe_status (varchar, nullable)
-AGREGAR:  metodo (varchar: tarjeta/transferencia, nullable)
+stripe_payment_intent_id  varchar(255) nullable
+stripe_status             varchar(50)  nullable  -- valor crudo del PaymentIntent.status de Stripe
+metodo                    varchar(30)  nullable  -- 'tarjeta_unico' / 'tarjeta_cuotas'
 ```
+
+### CHECK constraints reales descubiertos al implementar Fase 13 (importante)
+
+Igual que `usuario.rol` e `inventario.tipo`/`tecnica`, estas tablas legadas tienen CHECK
+constraints que restringen valores a un whitelist exacto — verificado con
+`SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conrelid = '<tabla>'::regclass`:
+
+- **`pago.modalidad`**: CHECK solo permite `'CONTADO'` / `'CREDITO'` (no `'unico'`/`'cuotas'`).
+  Pago único → `'CONTADO'`, plan de cuotas → `'CREDITO'`.
+- **`pago.venta_id`**: tiene constraint **UNIQUE** — solo puede existir una fila `Pago` por venta,
+  para siempre. El código usa `Pago::updateOrCreate(['venta_id' => ...], [...])` en vez de
+  `create()`, reutilizando la misma fila en cada reintento de pago.
+- **`cuota.estado`**: CHECK solo permite `'PENDIENTE'` / `'PAGADO'` — **no existe** `'FALLIDA'` a
+  nivel de BD. Una cuota cuyo cobro off-session falla se queda `'PENDIENTE'` y el comando
+  `pagos:cobrar-cuotas` la reintenta automáticamente al día siguiente.
+- **`pedido.estado`**: confirmado que solo permite `PENDIENTE/CONFIRMADO/ENVIADO/ENTREGADO` (sin
+  cambios respecto a lo ya documentado) — no se introdujo un estado nuevo para el flujo de pago.
