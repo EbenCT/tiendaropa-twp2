@@ -278,18 +278,17 @@ Registrado en `Kernel::schedule()` con `->daily()`.
 **Implementación completa** (decisión del usuario: continuar con Stripe en modo TEST, ver sección
 2 para el detalle de las alternativas bolivianas investigadas). Se verificó código (`php -l`,
 `npm run build`, `route:list`, `schedule:list`, resolución del singleton vía `tinker`) pero **no**
-end-to-end en navegador — eso requiere llaves reales de Stripe.
+end-to-end en navegador todavía.
 
-**Pendiente para probarlo de punta a punta**:
-1. Crear una cuenta gratuita en [stripe.com](https://stripe.com) (país "United States" basta,
-   solo para obtener llaves de modo test — no requiere verificación de identidad ni cuenta
-   bancaria).
-2. Copiar `STRIPE_KEY` (pk_test_...) y `STRIPE_SECRET` (sk_test_...) del Dashboard → Developers →
-   API keys, y pegarlas en `.env` (ya tiene placeholders listos).
-3. Instalar [Stripe CLI](https://stripe.com/docs/stripe-cli), correr
-   `stripe listen --forward-to localhost:8000/stripe/webhook` y copiar el `whsec_...` que imprime
-   a `STRIPE_WEBHOOK_SECRET` en `.env`.
-4. Con `php artisan serve` y `npm run dev` corriendo, probar el flujo completo (ver sección PR-26
-   en `plan_de_pruebas.md` para los 10 casos a verificar).
+**Avance real al 2026-06-28**:
+- [x] Cuenta Stripe creada y `STRIPE_KEY`/`STRIPE_SECRET` reales puestas en `.env` (modo test).
+- [x] Stripe CLI v1.43.2 instalado (`winget install Stripe.StripeCli`).
+- [ ] Falta correr `stripe login` (autenticar el CLI con la cuenta Stripe, requiere navegador) y
+      `stripe listen --forward-to localhost:8000/stripe/webhook` para obtener el `whsec_...` real
+      y pegarlo en `STRIPE_WEBHOOK_SECRET` (sigue con el placeholder `whsec_xxxxxxxxxxxx`).
+- [ ] Sin el paso anterior, ningún pago se reflejará como "succeeded" en la app (el webhook
+      rechazará la firma) — es bloqueante para probar cualquier caso de PR-26.
+- [ ] Pendiente: con `php artisan serve` + `npm run dev` + `stripe listen` corriendo, verificar
+      los 10 casos de PR-26 en `plan_de_pruebas.md` en el navegador.
 
 Ver `implementation_plan.md` y `task.md` para el detalle de archivos creados/modificados.

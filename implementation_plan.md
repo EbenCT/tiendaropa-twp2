@@ -271,9 +271,12 @@ Cubre pago único, plan de cuotas y métodos de pago guardados, vía una capa de
 venta, vía `updateOrCreate`), `cuota.estado` solo acepta `PENDIENTE`/`PAGADO` (sin `FALLIDA` — una
 cuota fallida queda `PENDIENTE` para reintento automático al día siguiente).
 
-**Pendiente para que funcione end-to-end**: completar `STRIPE_KEY`/`STRIPE_SECRET`/
-`STRIPE_WEBHOOK_SECRET` en `.env` con las llaves reales de una cuenta Stripe de prueba, e instalar
-Stripe CLI para probar el webhook localmente (`stripe listen --forward-to localhost:8000/stripe/webhook`).
+**Estado de credenciales (2026-06-28)**: `STRIPE_KEY`/`STRIPE_SECRET` reales ya están en `.env`
+(cuenta Stripe de prueba) y Stripe CLI v1.43.2 ya está instalado. **Falta** correr `stripe login`
++ `stripe listen --forward-to localhost:8000/stripe/webhook` para obtener el `whsec_...` real y
+completar `STRIPE_WEBHOOK_SECRET` (sigue con placeholder) — sin esto el webhook rechaza la firma y
+ningún pago se refleja como exitoso en la app. Una vez resuelto, queda pendiente la verificación
+end-to-end en navegador de los 10 casos de `PR-26` en `plan_de_pruebas.md`.
 Ver `plan_pagos_stripe.md` para el detalle completo de la arquitectura y la investigación de
 alternativas bolivianas (PagosNet/EBANX, Circle.bo, dLocal, PagoFácil Bolivia) para un eventual
 modo producción real.

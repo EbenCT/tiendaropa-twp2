@@ -107,7 +107,10 @@
 - [x] Secciones de pago en `Pedidos/Show.vue`, `Pedidos/Historial.vue`, `Admin/Pedidos/Show.vue` (solo lectura)
 - [x] Comando programado `pagos:cobrar-cuotas` (cobro off-session de cuotas vencidas) + `Kernel::schedule()`
 - [x] Vincular tabla `metodo_pago_usuario` (modelo reescrito, en uso)
-- [ ] Pendiente del usuario: completar `STRIPE_KEY`/`STRIPE_SECRET`/`STRIPE_WEBHOOK_SECRET` reales en `.env` y probar end-to-end con Stripe CLI
+- [x] `STRIPE_KEY`/`STRIPE_SECRET` reales puestos en `.env` (cuenta Stripe de prueba)
+- [x] Stripe CLI v1.43.2 instalado (`winget install Stripe.StripeCli`)
+- [ ] Pendiente del usuario: correr `stripe login` + `stripe listen --forward-to localhost:8000/stripe/webhook` y completar `STRIPE_WEBHOOK_SECRET` real en `.env` (sigue con placeholder)
+- [ ] Pendiente: verificar end-to-end en navegador los 10 casos de `PR-26` en `plan_de_pruebas.md`
 
 ---
 
