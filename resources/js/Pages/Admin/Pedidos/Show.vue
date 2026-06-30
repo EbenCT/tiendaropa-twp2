@@ -32,9 +32,11 @@
 
             <h3 style="margin-top:1.5rem">Pago (solo lectura)</h3>
             <template v-if="pago">
-              <span :class="['pago-badge', pago.stripe_status === 'succeeded' ? 'pago-ok' : 'pago-pend']">
-                {{ pago.stripe_status === 'succeeded' ? 'Pagado' : (pago.stripe_status === 'failed' ? 'Fallido' : 'Pendiente') }}
+              <p class="hint" style="margin-bottom:0.25rem">Pasarela: {{ pago.gateway === 'pagofacil' ? 'QR PagoFácil' : 'Stripe' }}</p>
+              <span :class="['pago-badge', estaPagado ? 'pago-ok' : 'pago-pend']">
+                {{ estaPagado ? 'Pagado' : (pago.stripe_status === 'failed' ? 'Fallido' : 'Pendiente') }}
               </span>
+              <p v-if="pago.gateway === 'pagofacil' && pago.pagofacil_status" class="hint">Estado PagoFácil (crudo): {{ pago.pagofacil_status }}</p>
               <table v-if="pago.modalidad === 'CREDITO' && pago.cuotas?.length" class="cuotas-table">
                 <thead><tr><th>Cuota</th><th>Monto</th><th>Vence</th><th>Estado</th></tr></thead>
                 <tbody>
@@ -61,6 +63,7 @@ import { Link, router } from '@inertiajs/vue3'
 import { computed } from 'vue'
 const props = defineProps({ pedido: Object })
 const pago = computed(() => (props.pedido.venta?.pagos || [])[0] || null)
+const estaPagado = computed(() => pago.value && (pago.value.stripe_status === 'succeeded' || pago.value.pagofacil_status === '2'))
 function cambiarEstado(estado) { router.patch(route('admin.pedidos.estado', props.pedido.id), { estado }, { preserveScroll: true }) }
 </script>
 

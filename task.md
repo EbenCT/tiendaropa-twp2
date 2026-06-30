@@ -97,6 +97,24 @@
 - [x] `Admin/Estadisticas/Index.vue` (dashboard con barras CSS)
 - [x] `Admin/Reportes/Index.vue` (gráfico barras mensuales + resumen anual)
 
+## FASE 14 – Pagos con PagoFácil (pasarela boliviana, principal) ✅ Implementada y probada contra sandbox real
+- [x] Documentación de PagoFácil revisada (`InfoPagoFacil/md/`: Botón de Pago CheckOut v2.1, Flujo QR, API MasterQR v1.1.0, Postman)
+- [x] Decisiones confirmadas: API MasterQR como base, dual gateway con Stripe (selector en UI), cuotas vía QR por cuota sin cobro automático
+- [x] Credenciales de sandbox cargadas en `.env`/`.env.example` y **validadas contra la API real** (login, list-enabled-services, generate-qr, query-transaction)
+- [x] `PagoFacilClient` (login + caché de token, reintento en 401) — `paymentMethodId=34` confirmado real vía `list-enabled-services`
+- [x] Migraciones aditivas en `pago` y `cuota` (columnas `gateway`, `pagofacil_*`) aplicadas en BD remota
+- [x] `QrPagoService` (pago único) + rutas + bloque QR en `Pedidos/Pagar.vue` (selector Stripe/PagoFácil, QR + verificación automática)
+- [x] Callback público (`PagoFacilCallbackController` + exclusión CSRF) + `CallbackHandlerService` — simulado y verificado (confirma pedido y cuotas)
+- [x] `CuotasPagoFacilService` (plan de cuotas vía QR por cuota) + botón "Pagar esta cuota" en `Pedidos/Show.vue`
+- [x] Comando `pagos:sincronizar-pagofacil` (pre-generación de QR + consulta de respaldo) + `Kernel::schedule()->everyFifteenMinutes()` — probado contra datos reales
+- [x] Visibilidad admin de solo lectura con `gateway` + selector de pasarela visible para el cliente
+- [x] Fix de SSL local (`storage/app/cacert.pem` + `PagoFacilClient::http()`) — sin tocar configuración fuera del proyecto
+- [x] Actualizar `db_analysis.md`, `plan_pagos_pagofacil.md` y agregar `PR-27` a `plan_de_pruebas.md`
+- [x] Verificación visual con clics reales en navegador (Playwright + Chromium instalados temporalmente): selector de pasarela, QR de pago único, "Ya pagué, verificar", plan de cuotas, botón "Pagar esta cuota", sección de pago en Show.vue — todo correcto. Se encontró y corrigió un bug real (estado de QR compartido entre pestañas "Pago único"/"Plan de cuotas")
+- [ ] Pendiente (no bloqueante, requiere autorización para exponer el servidor local): probar la entrega real del callback con un túnel público (ngrok/similar); hoy la red de seguridad (consulta manual + comando programado) es la fuente de verdad probada
+
+Ver `plan_pagos_pagofacil.md` para el detalle completo (arquitectura, hallazgos de sandbox, riesgos).
+
 ## FASE 13 – Pagos con Stripe ✅ (modo TEST)
 - [x] Instalar `stripe/stripe-php` + `@stripe/stripe-js` + `qrcode`
 - [x] Migración aditiva en tabla `pago` (stripe_payment_intent_id, stripe_status, metodo)
@@ -118,15 +136,15 @@
 
 | Métrica | Valor |
 |---------|-------|
-| Fases completadas | 13 de 13 |
-| Controladores | 20 |
+| Fases completadas | 14 de 14 |
+| Controladores | 21 |
 | Modelos Eloquent | 20 |
-| Servicios (`App\Services\Stripe`) | 4 |
-| Migraciones | 12 |
+| Servicios (`App\Services\Stripe` + `App\Services\PagoFacil`) | 8 (4 + 4) |
+| Migraciones | 14 |
 | Seeders | 7 |
-| Comandos Artisan | 1 (`pagos:cobrar-cuotas`) |
-| Vistas Vue | 23 páginas + 1 layout + 1 componente |
+| Comandos Artisan | 2 (`pagos:cobrar-cuotas`, `pagos:sincronizar-pagofacil`) |
+| Vistas Vue | 24 páginas + 1 layout + 2 componentes |
 | Composables | 1 (useTema.js) |
 | Middleware custom | 3 (CheckRole, TrackPageVisit, HandleInertiaRequests) |
-| Rutas | 55+ |
+| Rutas | 70+ |
 | Temas CSS | 3 × 2 modos = 6 combinaciones |

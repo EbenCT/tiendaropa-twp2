@@ -35,6 +35,8 @@
 24. [PR-23: Validaciones en español](#24-pr-23-validaciones-en-español)
 25. [PR-24: Flujos completos (casos de uso end-to-end)](#25-pr-24-flujos-completos)
 26. [PR-25: Responsive](#26-pr-25-responsive)
+27. [PR-26: Pagos con Stripe](#27-pr-26-pagos-con-stripe)
+28. [PR-27: Pagos con PagoFácil (QR)](#28-pr-27-pagos-con-pagofacil-qr)
 
 ---
 
@@ -578,6 +580,33 @@ php artisan tinker --execute="echo App\Models\User::count();"
 
 ---
 
+## 28. PR-27: Pagos con PagoFácil (QR)
+
+> Probado a nivel HTTP/API/BD **y con clics reales en navegador (Playwright + Chromium)** contra el
+> **sandbox real** de PagoFácil el 2026-06-29, con usuarios/pedidos desechables
+> (`qa.pagofacil@test.local`, limpiados tras la prueba). Ver `plan_pagos_pagofacil.md` sección 7
+> para el detalle de cada hallazgo, incluyendo un bug real encontrado y corregido durante la prueba
+> visual (estado de QR compartido entre las pestañas "Pago único" y "Plan de cuotas").
+
+| ID | Caso de prueba | Pasos | Resultado esperado | ✅/❌/⏸️ |
+|----|---------------|-------|--------------------|----|
+| PR-27.1 | Login y credenciales | `POST /login` con `tcTokenService`/`tcTokenSecret` reales | `200`, devuelve `accessToken` válido | ✅ |
+| PR-27.2 | Método de pago habilitado | `POST /list-enabled-services` | Devuelve `paymentMethodId=34` ("QR ATC", BOB) — coincide con `.env` | ✅ |
+| PR-27.3 | Generar QR de pago único (vía app) | Cliente autenticado → `POST /pedidos/{id}/pagar/pagofacil/unico` | `200`, `qrBase64`+`expirationDate`, fila `Pago` con `gateway='pagofacil'` y `pagofacil_transaction_id` poblado | ✅ |
+| PR-27.4 | Consultar estado manual | `GET /pedidos/{id}/pagar/pagofacil/estado?payment_number=P{id}-U` | `200`, `paymentStatus`+`paymentStatusDescription` ("En Proceso") | ✅ |
+| PR-27.5 | Plan de cuotas (3 cuotas) | `POST /pedidos/{id}/pagar/pagofacil/cuotas` con `num_cuotas=3` sobre un pedido de Bs. 85 | Crea 3 filas `Cuota` (28.33/28.33/28.34), QR generado solo para la cuota 1 | ✅ |
+| PR-27.6 | Callback confirma pago único | `POST /pagofacil/callback` simulando `{"PedidoID":"P{id}-U","Estado":2}` | `200` con `{error:0,...}`, `Pedido.estado`→`CONFIRMADO`, `Pago.pagofacil_status='2'` | ✅ |
+| PR-27.7 | Callback confirma una cuota | `POST /pagofacil/callback` simulando `{"PedidoID":"P{id}-C2","Estado":2}` | `Cuota.estado`→`PAGADO`, `fecha_pago_real` poblada | ✅ |
+| PR-27.8 | Comando de sincronización | `php artisan pagos:sincronizar-pagofacil` con una cuota con transacción generada pero no pagada | Corre sin errores, actualiza `pagofacil_status` vía `query-transaction` sin marcarla pagada (porque no lo está) | ✅ |
+| PR-27.9 | `callbackUrl` inválido rechazado | `generate-qr` con `callbackUrl` apuntando a `localhost`/IP privada/dominio inexistente | PagoFácil responde `"Invalid Url Callback"` — confirma que exige dominio público resoluble | ✅ |
+| PR-27.10 | Selector de pasarela en UI | Cliente entra a `/pedidos/{id}/pagar`, alterna entre "QR PagoFácil" y "Tarjeta (Stripe)" | Cambia el bloque mostrado sin recargar la página | ✅ (Playwright: PagoFácil activo por defecto, cambio a Stripe muestra el hint correcto, ida y vuelta sin errores) |
+| PR-27.11 | Botón "Pagar esta cuota" en Show.vue | Cuota PagoFácil `PENDIENTE` con `fecha_vencimiento <= hoy` | Aparece el botón, genera QR inline al hacer clic | ✅ (Playwright: tabla de 3 cuotas, botón "Pagar" visible solo en la cuota que vence hoy, ausente en las 2 futuras) |
+| PR-27.12 | Entrega real del callback (no simulada) | PagoFácil notifica `POST /pagofacil/callback` desde sus servidores tras un pago real en sandbox | Requiere túnel público (ngrok u otro) apuntando a `localhost:8000`, no ejecutado — requiere autorización explícita del usuario para exponer el servidor local | ⏸️ |
+| PR-27.13 | QR de pago único — verificación visual | Generar QR en `/pedidos/{id}/pagar` (PagoFácil, pago único) | Imagen QR válida renderizada, fecha de expiración visible, botón "Ya pagué, verificar" llama a `query-transaction` real y muestra "Estado: En Proceso" | ✅ |
+| PR-27.14 | Plan de cuotas — separación de estado entre pestañas | Generar QR de pago único, cambiar a "Plan de cuotas", elegir N cuotas, confirmar | El QR mostrado en cuotas es el de la cuota 1 (no el de pago único); texto "QR de la cuota 1 de N" con N correcto | ✅ (bug real encontrado y corregido — antes mostraba el QR de pago único con "QR de la cuota 1 de .") |
+
+---
+
 ## Resumen de casos de prueba
 
 | Sección | Cantidad de pruebas |
@@ -608,7 +637,8 @@ php artisan tinker --execute="echo App\Models\User::count();"
 | PR-24: Flujos completos (E2E) | 6 flujos |
 | PR-25: Responsive | 5 |
 | PR-26: Pagos con Stripe (⏸️ pendiente de llaves reales) | 10 |
-| **TOTAL** | **174 pruebas + 6 flujos E2E** |
+| PR-27: Pagos con PagoFácil (✅ probado vía API/BD y clic real en navegador, ⏸️ pendiente solo el túnel de callback) | 14 |
+| **TOTAL** | **188 pruebas + 6 flujos E2E** |
 
 ---
 

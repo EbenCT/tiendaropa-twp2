@@ -3,8 +3,12 @@
 namespace App\Http\Controllers\Cliente;
 
 use App\Http\Controllers\Controller;
+use App\Models\Cuota;
 use App\Models\MetodoPagoUsuario;
 use App\Models\Pedido;
+use App\Services\PagoFacil\CallbackHandlerService;
+use App\Services\PagoFacil\CuotasPagoFacilService;
+use App\Services\PagoFacil\QrPagoService;
 use App\Services\Stripe\CuotasService;
 use App\Services\Stripe\PagoUnicoService;
 use Illuminate\Http\Request;
@@ -16,16 +20,18 @@ class PagoController extends Controller
     public function __construct(
         private PagoUnicoService $pagoUnicoService,
         private CuotasService $cuotasService,
+        private QrPagoService $qrPagoService,
+        private CuotasPagoFacilService $cuotasPagoFacilService,
     ) {
     }
 
     public function mostrarPago(Request $request, int $id)
     {
         $pedido = Pedido::where('usuario_id', $request->user()->id)
-            ->with(['detalles.producto', 'venta.pagos'])
+            ->with(['detalles.producto', 'venta.pagos.cuotas'])
             ->findOrFail($id);
 
-        if ($pedido->venta?->pagos->contains(fn ($p) => $p->stripe_status === 'succeeded')) {
+        if ($pedido->estado !== 'PENDIENTE') {
             return redirect()->route('pedidos.show', $pedido->id)
                 ->with('info', 'Este pedido ya fue pagado.');
         }
@@ -69,6 +75,63 @@ class PagoController extends Controller
 
         return redirect()->route('pedidos.show', $pedido->id)
             ->with('success', 'Plan de cuotas creado. Se cobró la primera cuota.');
+    }
+
+    public function pagoFacilUnico(Request $request, int $id)
+    {
+        $pedido = Pedido::where('usuario_id', $request->user()->id)
+            ->with('detalles.producto', 'venta', 'usuario')
+            ->findOrFail($id);
+
+        $datos = $this->qrPagoService->generarQrPagoUnico($pedido, $pedido->venta);
+
+        return response()->json($datos);
+    }
+
+    public function pagoFacilCuotas(Request $request, int $id)
+    {
+        $request->validate([
+            'num_cuotas' => 'required|integer|in:2,3,6',
+        ]);
+
+        $pedido = Pedido::where('usuario_id', $request->user()->id)->with('venta', 'usuario')->findOrFail($id);
+
+        $datos = $this->cuotasPagoFacilService->crearPlanCuotas($pedido, $pedido->venta, (int) $request->num_cuotas);
+
+        return response()->json($datos);
+    }
+
+    public function pagoFacilQrCuota(Request $request, int $id, int $cuotaId)
+    {
+        $pedido = Pedido::where('usuario_id', $request->user()->id)->with('usuario')->findOrFail($id);
+
+        $cuota = Cuota::whereHas('pago.venta', fn ($q) => $q->where('pedido_id', $pedido->id))
+            ->where('id', $cuotaId)
+            ->where('estado', 'PENDIENTE')
+            ->where('fecha_vencimiento', '<=', now()->toDateString())
+            ->firstOrFail();
+
+        $datos = $this->qrPagoService->generarQrCuota($cuota, $pedido);
+
+        return response()->json($datos);
+    }
+
+    public function pagoFacilEstado(Request $request, int $id, CallbackHandlerService $callbackHandlerService)
+    {
+        $request->validate(['payment_number' => 'required|string']);
+
+        Pedido::where('usuario_id', $request->user()->id)->findOrFail($id);
+
+        $estado = $this->qrPagoService->consultarEstado($request->payment_number);
+
+        // Red de seguridad: si la consulta manual ya muestra "pagado", aplicar la misma
+        // actualización que haría el callback, sin esperar a que PagoFácil lo notifique.
+        $callbackHandlerService->handle([
+            'PedidoID' => $request->payment_number,
+            'Estado'   => $estado['paymentStatus'] ?? null,
+        ]);
+
+        return response()->json($estado);
     }
 
     public function exito(Request $request)

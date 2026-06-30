@@ -123,3 +123,31 @@ constraints que restringen valores a un whitelist exacto — verificado con
   `pagos:cobrar-cuotas` la reintenta automáticamente al día siguiente.
 - **`pedido.estado`**: confirmado que solo permite `PENDIENTE/CONFIRMADO/ENVIADO/ENTREGADO` (sin
   cambios respecto a lo ya documentado) — no se introdujo un estado nuevo para el flujo de pago.
+
+---
+
+## Fase 14 (PagoFácil) — columnas agregadas a `pago` y `cuota`
+
+Migraciones `2026_06_29_100013_add_pagofacil_columns_to_pago_table.php` y
+`2026_06_29_100014_add_pagofacil_columns_to_cuota_table.php` (ALTER aditivo, aplicadas):
+
+```
+-- pago
+gateway                    varchar(20)  nullable  -- 'stripe' / 'pagofacil'
+pagofacil_transaction_id   varchar(100) nullable  -- transactionId de PagoFácil (no nuestro paymentNumber)
+pagofacil_status           varchar(60)  nullable  -- paymentStatus crudo (numérico como string)
+pagofacil_qr_base64        text         nullable
+pagofacil_expira_en        timestamp    nullable
+
+-- cuota: mismas 4 columnas pagofacil_* (cada cuota QR es su propia transacción independiente)
+```
+
+Ningún CHECK constraint nuevo afecta a estas columnas (todas nullable, sin valores restringidos a
+nivel de BD). El identificador que correlaciona nuestras filas con PagoFácil en el callback es
+`paymentNumber` (`"P{pedido_id}-U"` para pago único, `"P{pedido_id}-C{num_cuota}"` para cuotas) —
+**no** se persiste como columna propia porque se reconstruye determinísticamente a partir de
+`pedido_id`/`num_cuota` en `CallbackHandlerService`.
+
+Ver `plan_pagos_pagofacil.md` para el detalle completo de la integración y los hallazgos de
+sandbox (paymentMethodId real confirmado, validación de `callbackUrl` contra dominios públicos, fix
+de certificados SSL en este entorno Windows).

@@ -17,6 +17,7 @@ class Kernel extends ConsoleKernel
     {
         // $schedule->command('inspire')->hourly();
         $schedule->command('pagos:cobrar-cuotas')->daily();
+        $schedule->command('pagos:sincronizar-pagofacil')->everyFifteenMinutes();
     }
 
     /**

@@ -38,4 +38,13 @@ return [
         'bob_usd_rate'   => (float) env('STRIPE_BOB_USD_RATE', 6.96),
     ],
 
+    'pagofacil' => [
+        'url'               => env('PAGOFACIL_URL', 'https://masterqr.pagofacil.com.bo/api/services/v2'),
+        'commerce_id'       => env('PAGOFACIL_COMMERCE_ID'),
+        'token_service'     => env('PAGOFACIL_TOKEN_SERVICE'),
+        'token_secret'      => env('PAGOFACIL_TOKEN_SECRET'),
+        'payment_method_id' => (int) env('PAGOFACIL_PAYMENT_METHOD_ID', 34),
+        'currency'          => (int) env('PAGOFACIL_CURRENCY', 2),
+    ],
+
 ];

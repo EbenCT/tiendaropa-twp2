@@ -7,67 +7,132 @@
 
         <div class="pagar-layout">
           <div class="pagar-main card">
-            <div class="tabs">
-              <button :class="['tab-btn', { active: tab === 'unico' }]" @click="tab = 'unico'">Pago único</button>
-              <button
-                :class="['tab-btn', { active: tab === 'cuotas' }]"
-                :disabled="metodosPago.length === 0"
-                @click="tab = 'cuotas'"
-              >
-                Plan de cuotas
+            <div class="gateway-tabs">
+              <button :class="['gateway-btn', { active: gateway === 'pagofacil' }]" @click="gateway = 'pagofacil'">
+                🔲 QR PagoFácil
+              </button>
+              <button :class="['gateway-btn', { active: gateway === 'stripe' }]" @click="gateway = 'stripe'">
+                💳 Tarjeta (Stripe)
               </button>
             </div>
 
-            <!-- Pago único -->
-            <div v-if="tab === 'unico'" class="tab-panel">
-              <p class="hint">Serás redirigido al checkout seguro de Stripe (modo de prueba).</p>
-              <button class="btn btn-primary" :disabled="cargandoUnico" @click="pagarUnico">
-                {{ cargandoUnico ? 'Generando pago...' : 'Pagar ahora con Stripe' }}
-              </button>
-
-              <div v-if="checkoutUrl" class="qr-box">
-                <p class="hint">O escanea este código con tu celular para pagar desde otro dispositivo (usa el mismo checkout seguro de Stripe, no es un método de pago distinto):</p>
-                <canvas ref="qrCanvas"></canvas>
+            <!-- ══════════════ PAGOFÁCIL ══════════════ -->
+            <template v-if="gateway === 'pagofacil'">
+              <div class="tabs">
+                <button :class="['tab-btn', { active: tabPf === 'unico' }]" @click="tabPf = 'unico'">Pago único</button>
+                <button :class="['tab-btn', { active: tabPf === 'cuotas' }]" @click="tabPf = 'cuotas'">Plan de cuotas</button>
               </div>
-            </div>
 
-            <!-- Plan de cuotas -->
-            <div v-else class="tab-panel">
-              <div v-if="metodosPago.length === 0" class="hint">
-                Registra un método de pago primero para poder pagar en cuotas.
-                <Link :href="route('metodos-pago.index')" class="link">Ir a Métodos de Pago</Link>
+              <!-- Pago único QR -->
+              <div v-if="tabPf === 'unico'" class="tab-panel">
+                <p class="hint">Genera un código QR y págalo desde tu app bancaria (QR Simple interbancario, modo de pruebas).</p>
+
+                <button v-if="!qrUnico" class="btn btn-primary" :disabled="cargandoPf" @click="generarQrUnico">
+                  {{ cargandoPf ? 'Generando QR...' : 'Generar QR para pagar' }}
+                </button>
+
+                <QrPagoFacil
+                  v-else
+                  :qr="qrUnico"
+                  :verificando="verificandoPf"
+                  :mensaje-estado="mensajeEstadoUnico"
+                  @verificar="() => verificarEstadoQr(qrUnico.paymentNumber, mensajeEstadoUnico)"
+                />
               </div>
-              <template v-else>
-                <div class="form-group">
+
+              <!-- Plan de cuotas QR -->
+              <div v-else class="tab-panel">
+                <div v-if="!qrCuotas" class="form-group">
                   <label class="form-label">Número de cuotas</label>
                   <div class="cuotas-options">
                     <label v-for="n in opcionesCuotas" :key="n" class="cuota-option">
-                      <input type="radio" v-model.number="form.num_cuotas" :value="n" />
+                      <input type="radio" v-model.number="numCuotasPf" :value="n" />
                       {{ n }} cuotas de Bs. {{ (totalBs / n).toFixed(2) }}
                     </label>
                   </div>
                   <p v-if="opcionesCuotas.length === 0" class="form-error">
                     El total del pedido no alcanza el mínimo de Bs. 50 por cuota.
                   </p>
+                  <p class="hint">Cada cuota genera su propio QR cuando llega su fecha — no hay cobro automático, tú la pagas escaneando el QR.</p>
+                  <button class="btn btn-primary" :disabled="cargandoPf || !numCuotasPf" @click="confirmarCuotasPf">
+                    {{ cargandoPf ? 'Creando plan...' : 'Confirmar plan y generar QR de la cuota 1' }}
+                  </button>
                 </div>
-                <div class="form-group">
-                  <label class="form-label">Método de pago</label>
-                  <div class="cuotas-options">
-                    <label v-for="m in metodosPago" :key="m.id" class="cuota-option">
-                      <input type="radio" v-model.number="form.metodo_pago_usuario_id" :value="m.id" />
-                      {{ m.brand }} **** {{ m.last4 }}
-                    </label>
-                  </div>
-                </div>
+
+                <template v-else>
+                  <p class="hint">QR de la cuota 1 de {{ numCuotasPf }}. Las demás cuotas se pagan desde el detalle del pedido cuando vencen.</p>
+                  <QrPagoFacil
+                    :qr="qrCuotas"
+                    :verificando="verificandoPf"
+                    :mensaje-estado="mensajeEstadoCuotas"
+                    @verificar="() => verificarEstadoQr(qrCuotas.paymentNumber, mensajeEstadoCuotas)"
+                  />
+                </template>
+              </div>
+            </template>
+
+            <!-- ══════════════ STRIPE ══════════════ -->
+            <template v-else>
+              <div class="tabs">
+                <button :class="['tab-btn', { active: tabStripe === 'unico' }]" @click="tabStripe = 'unico'">Pago único</button>
                 <button
-                  class="btn btn-primary"
-                  :disabled="form.processing || !form.num_cuotas || !form.metodo_pago_usuario_id"
-                  @click="confirmarCuotas"
+                  :class="['tab-btn', { active: tabStripe === 'cuotas' }]"
+                  :disabled="metodosPago.length === 0"
+                  @click="tabStripe = 'cuotas'"
                 >
-                  Confirmar plan de cuotas
+                  Plan de cuotas
                 </button>
-              </template>
-            </div>
+              </div>
+
+              <div v-if="tabStripe === 'unico'" class="tab-panel">
+                <p class="hint">Serás redirigido al checkout seguro de Stripe (modo de prueba).</p>
+                <button class="btn btn-primary" :disabled="cargandoUnico" @click="pagarUnico">
+                  {{ cargandoUnico ? 'Generando pago...' : 'Pagar ahora con Stripe' }}
+                </button>
+
+                <div v-if="checkoutUrl" class="qr-box">
+                  <p class="hint">O escanea este código con tu celular para pagar desde otro dispositivo (usa el mismo checkout seguro de Stripe, no es un método de pago distinto):</p>
+                  <canvas ref="qrCanvas"></canvas>
+                </div>
+              </div>
+
+              <div v-else class="tab-panel">
+                <div v-if="metodosPago.length === 0" class="hint">
+                  Registra un método de pago primero para poder pagar en cuotas.
+                  <Link :href="route('metodos-pago.index')" class="link">Ir a Métodos de Pago</Link>
+                </div>
+                <template v-else>
+                  <div class="form-group">
+                    <label class="form-label">Número de cuotas</label>
+                    <div class="cuotas-options">
+                      <label v-for="n in opcionesCuotas" :key="n" class="cuota-option">
+                        <input type="radio" v-model.number="form.num_cuotas" :value="n" />
+                        {{ n }} cuotas de Bs. {{ (totalBs / n).toFixed(2) }}
+                      </label>
+                    </div>
+                    <p v-if="opcionesCuotas.length === 0" class="form-error">
+                      El total del pedido no alcanza el mínimo de Bs. 50 por cuota.
+                    </p>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Método de pago</label>
+                    <div class="cuotas-options">
+                      <label v-for="m in metodosPago" :key="m.id" class="cuota-option">
+                        <input type="radio" v-model.number="form.metodo_pago_usuario_id" :value="m.id" />
+                        {{ m.brand }} **** {{ m.last4 }}
+                      </label>
+                    </div>
+                  </div>
+                  <button
+                    class="btn btn-primary"
+                    :disabled="form.processing || !form.num_cuotas || !form.metodo_pago_usuario_id"
+                    @click="confirmarCuotas"
+                  >
+                    Confirmar plan de cuotas
+                  </button>
+                </template>
+              </div>
+            </template>
           </div>
 
           <div class="pagar-resumen card">
@@ -83,7 +148,7 @@
               <span>Total</span>
               <span>Bs. {{ totalBs.toFixed(2) }}</span>
             </div>
-            <p class="resumen-usd">≈ $us. {{ totalUsd.toFixed(2) }} (se cobra en USD vía Stripe)</p>
+            <p v-if="gateway === 'stripe'" class="resumen-usd">≈ $us. {{ totalUsd.toFixed(2) }} (se cobra en USD vía Stripe)</p>
           </div>
         </div>
       </div>
@@ -93,6 +158,7 @@
 
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue'
+import QrPagoFacil from '@/Components/QrPagoFacil.vue'
 import { Link, useForm } from '@inertiajs/vue3'
 import { computed, nextTick, ref } from 'vue'
 import axios from 'axios'
@@ -104,15 +170,68 @@ const props = defineProps({
   metodosPago: { type: Array, default: () => [] },
 })
 
-const tab = ref('unico')
-const cargandoUnico = ref(false)
-const checkoutUrl = ref(null)
-const qrCanvas = ref(null)
+const gateway = ref('pagofacil')
+const tabPf = ref('unico')
+const tabStripe = ref('unico')
 
 const totalBs = computed(() => Number(props.pedido.venta?.total || 0))
 const totalUsd = computed(() => props.totalUsd)
-
 const opcionesCuotas = computed(() => [2, 3, 6].filter(n => totalBs.value / n >= 50))
+
+// ── PagoFácil ──────────────────────────────────────────────────────
+// qrUnico y qrCuotas se mantienen separados: son dos transacciones independientes
+// (paymentNumber distinto) y no deben mezclarse al cambiar de pestaña.
+const cargandoPf = ref(false)
+const verificandoPf = ref(false)
+const qrUnico = ref(null)
+const qrCuotas = ref(null)
+const numCuotasPf = ref(null)
+const mensajeEstadoUnico = ref('')
+const mensajeEstadoCuotas = ref('')
+
+async function generarQrUnico() {
+  cargandoPf.value = true
+  mensajeEstadoUnico.value = ''
+  try {
+    const { data } = await axios.post(route('pedidos.pagar.pagofacil.unico', props.pedido.id))
+    qrUnico.value = data
+  } finally {
+    cargandoPf.value = false
+  }
+}
+
+async function confirmarCuotasPf() {
+  cargandoPf.value = true
+  mensajeEstadoCuotas.value = ''
+  try {
+    const { data } = await axios.post(route('pedidos.pagar.pagofacil.cuotas', props.pedido.id), {
+      num_cuotas: numCuotasPf.value,
+    })
+    qrCuotas.value = data
+  } finally {
+    cargandoPf.value = false
+  }
+}
+
+async function verificarEstadoQr(paymentNumber, mensajeRef) {
+  verificandoPf.value = true
+  try {
+    const { data } = await axios.get(route('pedidos.pagar.pagofacil.estado', props.pedido.id), {
+      params: { payment_number: paymentNumber },
+    })
+    mensajeRef.value = data.paymentStatusDescription || 'Estado desconocido'
+    if (Number(data.paymentStatus) === 2) {
+      window.location.href = route('pedidos.show', props.pedido.id)
+    }
+  } finally {
+    verificandoPf.value = false
+  }
+}
+
+// ── Stripe ─────────────────────────────────────────────────────────
+const cargandoUnico = ref(false)
+const checkoutUrl = ref(null)
+const qrCanvas = ref(null)
 
 const form = useForm({
   num_cuotas: null,
@@ -144,6 +263,9 @@ function confirmarCuotas() {
 .back-link { display:inline-block; margin-bottom:1rem; font-size:0.875rem; color:var(--color-accent); }
 .page-title { font-size:2rem; margin-bottom:2rem; }
 .pagar-layout { display:grid; grid-template-columns:1fr 340px; gap:2rem; align-items:start; }
+.gateway-tabs { display:flex; gap:0.5rem; margin-bottom:1rem; }
+.gateway-btn { flex:1; padding:0.75rem 1rem; border:2px solid var(--border-color); border-radius:8px; background:none; cursor:pointer; font-weight:700; color:var(--text-secondary); }
+.gateway-btn.active { border-color:var(--color-accent); color:var(--color-accent); background:rgba(0,0,0,0.03); }
 .tabs { display:flex; gap:0.5rem; margin-bottom:1.5rem; border-bottom:1px solid var(--border-color); }
 .tab-btn { padding:0.6rem 1rem; background:none; border:none; border-bottom:2px solid transparent; cursor:pointer; font-weight:600; color:var(--text-secondary); }
 .tab-btn.active { color:var(--color-accent); border-bottom-color:var(--color-accent); }

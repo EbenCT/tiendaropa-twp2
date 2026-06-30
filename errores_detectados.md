@@ -122,6 +122,13 @@ Este archivo registra los errores detectados durante las pruebas MVP.
 * **Verificación**: se intentó una salida de 999999 unidades sobre un producto con 50 en stock → error "La cantidad de salida (999999) supera el stock disponible (50)." y no se creó el movimiento.
 * **Nota de limpieza**: el stock corrupto (-99989) del producto real afectado por la prueba (id=12, "Blazer Ejecutivo Gris") fue restaurado a su valor original (10) con autorización del usuario, y se eliminó el movimiento de prueba que lo causó.
 
+## 19. Plan de cuotas PagoFácil mostraba el QR equivocado al cambiar de pestaña (hallazgo nuevo, sesión PagoFácil)
+* **Estado:** ✅ Corregido y verificado con Playwright (clic real)
+* **Causa/Problema**: `resources/js/Pages/Pedidos/Pagar.vue` usaba una sola variable `qrPf` compartida entre el bloque "Pago único" y el bloque "Plan de cuotas" de la pasarela PagoFácil. Si el cliente generaba primero el QR de pago único y luego cambiaba a la pestaña "Plan de cuotas", el componente mostraba ese mismo QR disfrazado de "cuota 1", con el texto roto `"QR de la cuota 1 de ."` (el número de cuotas quedaba vacío porque nunca se había seleccionado).
+* **Por qué se detectó**: al probar el flujo completo con Playwright (login real, generar QR de pago único, cambiar de pestaña), el texto renderizado no coincidía con lo esperado — confirmó que el QR mostrado era el de la transacción de pago único (`paymentNumber="P{id}-U"`), no uno nuevo de cuota.
+* **Solución aplicada**: se separó el estado en `qrUnico`/`qrCuotas` y `mensajeEstadoUnico`/`mensajeEstadoCuotas` (variables independientes, antes mezcladas en `qrPf`/`mensajeEstadoPf`), con una función `verificarEstadoQr(paymentNumber, mensajeRef)` parametrizada para no duplicar lógica.
+* **Verificación**: con un pedido de prueba de Bs. 340 (3 cuotas de Bs. 113.33/113.33/113.34), tras la corrección el texto mostró correctamente `"QR de la cuota 1 de 3"`, y generar el QR de pago único ya no contamina la pestaña de cuotas (cada una conserva su propio QR independiente).
+
 ---
 
 ## Cambios de código realizados — sesión 1
@@ -145,3 +152,15 @@ Este archivo registra los errores detectados durante las pruebas MVP.
 
 ## Metodología de verificación
 Todo lo de esta sesión se verificó con **Playwright** (Chromium real controlado por código) haciendo clic, llenando formularios y confirmando los cambios directamente en la base de datos remota — no solo lectura de código. El servidor de desarrollo PHP (`php artisan serve`) es de un solo hilo y cada request tarda ~10s por la latencia hacia la BD remota en Bolivia; esto causó varios falsos negativos iniciales en las pruebas automatizadas (timeouts de mi script, no fallas reales), todos descartados cruzando contra el estado real de la BD.
+
+## Cambios de código realizados — sesión 3 (integración PagoFácil + Playwright)
+* `app/Services/PagoFacil/` (nuevo): `PagoFacilClient`, `QrPagoService`, `CuotasPagoFacilService`, `CallbackHandlerService`.
+* `app/Http/Controllers/PagoFacilCallbackController.php` (nuevo) + `Cliente/PagoController.php`: métodos `pagoFacilUnico`, `pagoFacilCuotas`, `pagoFacilQrCuota`, `pagoFacilEstado`.
+* `app/Console/Commands/SincronizarPagoFacil.php` (nuevo) + `Kernel::schedule()`.
+* Migraciones aditivas `2026_06_29_100013_...` (`pago`) y `2026_06_29_100014_...` (`cuota`): columnas `gateway`, `pagofacil_transaction_id`, `pagofacil_status`, `pagofacil_qr_base64`, `pagofacil_expira_en`.
+* `resources/js/Pages/Pedidos/Pagar.vue`: selector de pasarela Stripe/PagoFácil + corrección del error #19 (estado de QR compartido entre pestañas).
+* `resources/js/Components/QrPagoFacil.vue` (nuevo): componente reutilizable de QR + verificación de estado.
+* `resources/js/Pages/Pedidos/Show.vue` y `Admin/Pedidos/Show.vue`: sección de pago ampliada con `gateway` y botón "Pagar esta cuota".
+* `storage/app/cacert.pem` (nuevo): bundle CA de Mozilla, necesario porque esta instalación de PHP en Windows no tenía `curl.cainfo` configurado a nivel de sistema (rompía toda llamada HTTPS de `PagoFacilClient` con `cURL error 60`). Resuelto a nivel de código (`PagoFacilClient::http()`), sin tocar `php.ini`.
+* Usuario de prueba creado: `qa.pagofacil@test.local` (password `Test1234!`) — queda en la BD para pruebas futuras, mismo patrón que los usuarios `test.*@local.test`.
+* Ver `plan_pagos_pagofacil.md` para el detalle completo de arquitectura y hallazgos de sandbox (ID de método de pago confirmado, validación de `callbackUrl` contra dominios públicos, etc.).

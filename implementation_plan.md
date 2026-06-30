@@ -239,6 +239,7 @@ resources/css/app.css  (390 líneas)
 | 11 | Gestión Admin (productos, inventario, menú, usuarios) | ✅ Completa |
 | 12 | Estadísticas y Reportes | ✅ Completa |
 | 13 | Pagos con Stripe | ✅ Completa (modo TEST) |
+| 14 | Pagos con PagoFácil (pasarela boliviana, principal) | ✅ Implementada y probada contra sandbox real |
 
 ---
 
@@ -280,6 +281,47 @@ end-to-end en navegador de los 10 casos de `PR-26` en `plan_de_pruebas.md`.
 Ver `plan_pagos_stripe.md` para el detalle completo de la arquitectura y la investigación de
 alternativas bolivianas (PagosNet/EBANX, Circle.bo, dLocal, PagoFácil Bolivia) para un eventual
 modo producción real.
+
+---
+
+## Fase 14: Pagos con PagoFácil — implementada y probada contra sandbox real
+
+El docente pidió explícitamente integrar **PagoFácil Bolivia** (pasarela local que sí liquida en
+BOB, a diferencia de Stripe). Se investigó la documentación provista en `InfoPagoFacil/md/` (API
+MasterQR v2: login, generate-qr, query-transaction, callback), se recibieron credenciales de
+sandbox y se implementó la integración completa: capa de servicios `App\Services\PagoFacil\`
+(`PagoFacilClient`, `QrPagoService`, `CuotasPagoFacilService`, `CallbackHandlerService`),
+migraciones aditivas en `pago`/`cuota`, controlador ampliado (`Cliente\PagoController`), callback
+público (`PagoFacilCallbackController`), comando programado `pagos:sincronizar-pagofacil`, y
+frontend con selector de pasarela (PagoFácil/Stripe) en `Pedidos/Pagar.vue` + componente
+`Components/QrPagoFacil.vue`.
+
+Decisiones confirmadas: PagoFácil se integra vía la **API MasterQR** (no el Botón de Pago CheckOut,
+doc más vieja), se mantiene **Stripe intacto** (Fase 13) con un selector de pasarela en la UI, y el
+plan de cuotas con PagoFácil genera **un QR nuevo por cada cuota** (sin cobro automático, a
+diferencia de Stripe, porque PagoFácil no soporta tarjetas guardadas ni off-session).
+
+**Pruebas end-to-end (2026-06-29)** contra el sandbox real de PagoFácil confirmaron: login,
+`list-enabled-services` (`paymentMethodId=34` real), generación de QR de pago único a través de
+todo el stack (HTTP → controlador → servicio → API real → BD), plan de cuotas (3 cuotas con montos
+correctos), simulación de callback (confirma `Pedido` y `Cuota`), consulta manual de estado, y
+ejecución limpia del comando programado. Se encontraron y resolvieron dos problemas de entorno no
+anticipados en el plan original: falta de certificados SSL en esta instalación de PHP en Windows
+(resuelto con un bundle CA dentro del proyecto, sin tocar configuración del sistema) y la exigencia
+de PagoFácil de que `callbackUrl` sea un dominio público resoluble (confirmado empíricamente; en
+local se usa un placeholder, la fuente de verdad real en desarrollo es la consulta manual + el
+comando programado).
+
+**Verificación visual con Playwright** (clic real en navegador, mismo método usado en las sesiones
+de testing previas — ver `errores_detectados.md`): selector de pasarela, generación y render del QR,
+botón "Ya pagué, verificar", plan de cuotas y botón "Pagar esta cuota" en `Pedidos/Show.vue`, todo
+confirmado funcionando. Se encontró y corrigió un bug real (error #19 en `errores_detectados.md`):
+`Pedidos/Pagar.vue` compartía una sola variable de estado de QR entre las pestañas "Pago único" y
+"Plan de cuotas", mostrando el QR equivocado al cambiar de pestaña.
+
+Ver `plan_pagos_pagofacil.md` para el detalle completo de arquitectura, hallazgos de sandbox y
+riesgos pendientes (probar la entrega real del callback requiere un túnel público, no ejecutado por
+requerir autorización explícita para exponer el servidor local a internet).
 
 ---
 

@@ -11,6 +11,7 @@ use App\Http\Controllers\Cliente\PedidoController;
 use App\Http\Controllers\Cliente\PagoController;
 use App\Http\Controllers\Cliente\MetodoPagoController;
 use App\Http\Controllers\StripeWebhookController;
+use App\Http\Controllers\PagoFacilCallbackController;
 use App\Http\Controllers\Admin\ProductoAdminController;
 use App\Http\Controllers\Admin\InventarioController;
 use App\Http\Controllers\Admin\PedidoAdminController;
@@ -33,6 +34,9 @@ Route::get('/buscar',        [BuscadorController::class, 'buscar'])->name('busca
 
 // Webhook de Stripe — sin sesión/CSRF, protegido por verificación de firma en el controlador
 Route::post('/stripe/webhook', [StripeWebhookController::class, 'handle'])->name('stripe.webhook');
+
+// Callback de PagoFácil — sin sesión/CSRF, identifica la transacción por el PedidoID (paymentNumber)
+Route::post('/pagofacil/callback', [PagoFacilCallbackController::class, 'handle'])->name('pagofacil.callback');
 
 // ═══════════════════════════════════════════════════════════════
 // AUTH
@@ -80,6 +84,12 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/{id}/pagar',         [PagoController::class, 'mostrarPago'])->name('pagar');
         Route::post('/{id}/pagar/unico',  [PagoController::class, 'iniciarPagoUnico'])->name('pagar.unico');
         Route::post('/{id}/pagar/cuotas', [PagoController::class, 'iniciarPagoCuotas'])->name('pagar.cuotas');
+
+        // PagoFácil (QR) — pasarela principal
+        Route::post('/{id}/pagar/pagofacil/unico',                [PagoController::class, 'pagoFacilUnico'])->name('pagar.pagofacil.unico');
+        Route::post('/{id}/pagar/pagofacil/cuotas',                [PagoController::class, 'pagoFacilCuotas'])->name('pagar.pagofacil.cuotas');
+        Route::post('/{id}/pagar/pagofacil/cuotas/{cuotaId}/qr',   [PagoController::class, 'pagoFacilQrCuota'])->name('pagar.pagofacil.cuota-qr');
+        Route::get('/{id}/pagar/pagofacil/estado',                 [PagoController::class, 'pagoFacilEstado'])->name('pagar.pagofacil.estado');
     });
 
     // Métodos de pago guardados (Stripe)

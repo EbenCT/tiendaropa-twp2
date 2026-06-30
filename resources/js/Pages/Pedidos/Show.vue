@@ -42,13 +42,14 @@
             <div class="card" style="margin-top:1rem">
               <h3>Pago</h3>
               <template v-if="pago">
-                <span :class="['estado-badge', pago.stripe_status === 'succeeded' ? 'estado-entregado' : 'estado-pendiente']">
-                  {{ pago.stripe_status === 'succeeded' ? 'Pagado' : (pago.stripe_status === 'failed' ? 'Fallido' : 'Pendiente') }}
+                <p class="hint" style="margin-bottom:0.5rem">Pasarela: {{ pago.gateway === 'pagofacil' ? 'QR PagoFácil' : 'Stripe' }}</p>
+                <span :class="['estado-badge', estaPagado ? 'estado-entregado' : 'estado-pendiente']">
+                  {{ estaPagado ? 'Pagado' : (pago.stripe_status === 'failed' ? 'Fallido' : 'Pendiente') }}
                 </span>
 
                 <table v-if="pago.modalidad === 'CREDITO' && pago.cuotas?.length" class="cuotas-table">
                   <thead>
-                    <tr><th>Cuota</th><th>Monto</th><th>Vence</th><th>Estado</th></tr>
+                    <tr><th>Cuota</th><th>Monto</th><th>Vence</th><th>Estado</th><th v-if="pago.gateway === 'pagofacil'"></th></tr>
                   </thead>
                   <tbody>
                     <tr v-for="c in pago.cuotas" :key="c.id">
@@ -56,13 +57,25 @@
                       <td>Bs. {{ Number(c.monto).toFixed(2) }}</td>
                       <td>{{ formatFecha(c.fecha_vencimiento) }}</td>
                       <td>{{ c.estado }}</td>
+                      <td v-if="pago.gateway === 'pagofacil'">
+                        <button v-if="puedePagarCuota(c)" class="btn btn-secondary btn-sm" @click="pagarCuota(c)">Pagar</button>
+                      </td>
                     </tr>
                   </tbody>
                 </table>
+
+                <div v-if="cuotaQr" style="margin-top:1rem">
+                  <QrPagoFacil
+                    :qr="cuotaQr"
+                    :verificando="verificandoCuota"
+                    :mensaje-estado="mensajeCuotaEstado"
+                    @verificar="verificarCuota"
+                  />
+                </div>
               </template>
               <p v-else class="hint">Aún no se inició un pago para este pedido.</p>
 
-              <Link v-if="pago?.stripe_status !== 'succeeded'" :href="route('pedidos.pagar', pedido.id)" class="btn btn-primary btn-full" style="margin-top:1rem">
+              <Link v-if="!estaPagado" :href="route('pedidos.pagar', pedido.id)" class="btn btn-primary btn-full" style="margin-top:1rem">
                 {{ pago ? 'Reintentar pago' : 'Pagar ahora' }}
               </Link>
             </div>
@@ -75,14 +88,46 @@
 
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue'
+import QrPagoFacil from '@/Components/QrPagoFacil.vue'
 import { Link } from '@inertiajs/vue3'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+import axios from 'axios'
 
 const props = defineProps({
   pedido: { type: Object, required: true },
 })
 
 const pago = computed(() => (props.pedido.venta?.pagos || [])[0] || null)
+const estaPagado = computed(() => pago.value && (pago.value.stripe_status === 'succeeded' || pago.value.pagofacil_status === '2'))
+
+const cuotaQr = ref(null)
+const verificandoCuota = ref(false)
+const mensajeCuotaEstado = ref('')
+
+function puedePagarCuota(c) {
+  return c.estado === 'PENDIENTE' && new Date(c.fecha_vencimiento) <= new Date()
+}
+
+async function pagarCuota(c) {
+  mensajeCuotaEstado.value = ''
+  const { data } = await axios.post(route('pedidos.pagar.pagofacil.cuota-qr', [props.pedido.id, c.id]))
+  cuotaQr.value = data
+}
+
+async function verificarCuota() {
+  verificandoCuota.value = true
+  try {
+    const { data } = await axios.get(route('pedidos.pagar.pagofacil.estado', props.pedido.id), {
+      params: { payment_number: cuotaQr.value.paymentNumber },
+    })
+    mensajeCuotaEstado.value = data.paymentStatusDescription || 'Estado desconocido'
+    if (Number(data.paymentStatus) === 2) {
+      window.location.reload()
+    }
+  } finally {
+    verificandoCuota.value = false
+  }
+}
 
 function formatFecha(f) { return new Date(f).toLocaleDateString('es-BO', { year:'numeric', month:'long', day:'numeric' }) }
 function calcTotal() { return (props.pedido.detalles || []).reduce((s, d) => s + (d.subtotal || d.cantidad * d.precio_unitario), 0) }
@@ -114,5 +159,6 @@ function calcTotal() { return (props.pedido.detalles || []).reduce((s, d) => s +
 .btn-full { width:100%; justify-content:center; padding:0.65rem; display:flex; }
 .cuotas-table { width:100%; margin-top:1rem; font-size:0.85rem; border-collapse:collapse; }
 .cuotas-table th, .cuotas-table td { text-align:left; padding:0.4rem 0.3rem; border-bottom:1px solid var(--border-color); }
+.btn-sm { padding:0.3rem 0.6rem; font-size:0.75rem; }
 @media (max-width:768px) { .show-layout { grid-template-columns:1fr; } }
 </style>
