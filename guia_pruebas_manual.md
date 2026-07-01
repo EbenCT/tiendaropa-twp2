@@ -62,6 +62,7 @@ Antes de loguearte con ninguna cuenta, prueba esto en una pestaña sin sesión:
 - [ ] Prueba los botones **A- / A / A+** — el tamaño de letra de toda la página escala.
 - [ ] Usa el buscador del header, escribe el nombre de un producto — debe aparecer un dropdown con
       resultados.
+- [ ] Prueba el botón hamburger (≡) del header → en pantalla grande colapsa el sidebar a solo iconos; en pantalla pequeña abre/cierra el menú.
 - [ ] Ve a `Catálogo`, filtra por categoría/talla/precio — la lista se actualiza.
 - [ ] Entra al detalle de un producto — clic en "Agregar al Carrito" o en el corazón 🤍 de favoritos
       → debe **redirigirte a `/login`** (estas acciones requieren cuenta).

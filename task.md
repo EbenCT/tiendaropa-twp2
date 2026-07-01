@@ -132,11 +132,45 @@ Ver `plan_pagos_pagofacil.md` para el detalle completo (arquitectura, hallazgos 
 
 ---
 
+## FASE 15 – Mejoras de UI/UX y correcciones ✅ (2026-06-30)
+
+### Correcciones de bugs
+- [x] **SQL reportes**: `SUM(detalle_pedido.subtotal)` → `SUM(detalle_pedido.cantidad * detalle_pedido.precio_unitario)` en `ReporteController.php` (columna `subtotal` no existe en la tabla)
+- [x] **Botón "Ingresar" invisible en modo luz**: `.topbar .btn-outline` ahora usa color/borde blancos — el topbar siempre tiene fondo oscuro en los 3 temas
+- [x] **Reset de escala de fuente no persistía**: `resetFuente()` en `useTema.js` ahora llama a `localStorage.setItem('fontScale', '1')` además de actualizar el ref
+
+### Layout fijo (sidebar + footer siempre visibles)
+- [x] `app-shell`: `height: 100vh; overflow: hidden` (antes `min-height`, el shell entero scrolleaba)
+- [x] `app-body`: `height: calc(100vh - 60px); overflow: hidden`
+- [x] `app-sidebar`: `height: 100%; overflow-y: auto` (el sidebar tiene su propio scroll si es largo)
+- [x] `app-main`: `overflow: hidden`
+- [x] `page-content`: `overflow-y: auto` — **única zona de scroll** con la rueda del mouse
+- [x] Footer siempre visible al fondo (`flex-shrink: 0`)
+
+### Sidebar colapsable (icono-only en desktop)
+- [x] Botón hamburger en desktop (≥900px): colapsa a 60px de ancho con solo iconos + tooltips (`title`)
+- [x] Botón hamburger en mobile (<900px): abre/cierra con overlay (comportamiento original)
+- [x] Estado persiste en `localStorage.sidebarCollapsed`
+- [x] Todos los textos del sidebar usan clase `.sidebar-text` → `display: none` al colapsar
+- [x] Submenús se ocultan automáticamente cuando el sidebar está colapsado
+- [x] Overrides CSS con `!important` para mobile (siempre muestra sidebar completo en pantallas pequeñas)
+
+### Buscador multifuncional con filtro por rol
+- [x] `BuscadorController.php`: nuevo método `buscarUsuarios()` — vendedores (nivel ≥ 2) ven clientes; propietarios+ ven todos
+- [x] Dropdown en `AppLayout.vue` con nueva sección "Usuarios" con icono y rol
+- [x] Placeholder del buscador actualizado: "Buscar en el sistema..."
+- [x] Clientes e invitados nunca ven usuarios ni acciones administrativas en resultados
+
+### Tipografía
+- [x] Fuente base reducida de `16px` a `14px` en `app.css` (más compacta y profesional)
+
+---
+
 ## Resumen de progreso
 
 | Métrica | Valor |
 |---------|-------|
-| Fases completadas | 14 de 14 |
+| Fases completadas | 15 de 15 |
 | Controladores | 21 |
 | Modelos Eloquent | 20 |
 | Servicios (`App\Services\Stripe` + `App\Services\PagoFacil`) | 8 (4 + 4) |

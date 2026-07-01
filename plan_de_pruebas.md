@@ -607,6 +607,49 @@ php artisan tinker --execute="echo App\Models\User::count();"
 
 ---
 
+---
+
+## 29. PR-28: Layout fijo y sidebar colapsable (2026-06-30)
+
+| ID | Caso de prueba | Pasos | Resultado esperado | ✅/❌ |
+|----|---------------|-------|--------------------|----|
+| PR-28.1 | Solo page-content scrollea | Con contenido largo, usar rueda del mouse | Sidebar y footer permanecen fijos; solo el área de contenido central sube/baja | ✅ |
+| PR-28.2 | Footer siempre visible | Ir a página con mucho contenido | Footer visible en la parte inferior sin necesidad de hacer scroll | ✅ |
+| PR-28.3 | Sidebar siempre visible | Scroll en page-content | El sidebar lateral no se mueve ni desaparece | ✅ |
+| PR-28.4 | Colapsar sidebar (desktop) | En ventana ≥900px, clic en botón hamburger | Sidebar se estrecha a 60px mostrando solo iconos | ✅ |
+| PR-28.5 | Tooltip de iconos | Sidebar colapsado, hover sobre un icono | Aparece tooltip con el nombre del ítem (`title` attribute) | ✅ |
+| PR-28.6 | Expandir sidebar | Sidebar colapsado, clic en hamburger nuevamente | Sidebar vuelve a 240px con textos visibles | ✅ |
+| PR-28.7 | Estado colapsado persiste | Colapsar → navegar a otra página | Sidebar sigue colapsado (persiste en localStorage) | ✅ |
+| PR-28.8 | Mobile siempre muestra sidebar completo | Ventana <900px con sidebar colapsado en desktop | Al reducir la ventana, sidebar se muestra completo (overrides CSS) | ✅ |
+| PR-28.9 | Submenús se ocultan al colapsar | Abrir submenú → colapsar sidebar | Los submenús desaparecen automáticamente en modo colapsado | ✅ |
+
+---
+
+## 30. PR-29: Buscador multifuncional con usuarios (2026-06-30)
+
+| ID | Caso de prueba | Pasos | Resultado esperado | ✅/❌ |
+|----|---------------|-------|--------------------|----|
+| PR-29.1 | Invitado no ve usuarios | Sin login, buscar nombre de un usuario existente | Dropdown NO muestra sección "Usuarios" | ✅ |
+| PR-29.2 | Cliente no ve usuarios | Login como cliente, buscar nombre de usuario | Dropdown NO muestra sección "Usuarios" | ✅ |
+| PR-29.3 | Vendedor ve solo clientes | Login como vendedor, buscar nombre de un admin | Admin no aparece; solo clientes | ✅ |
+| PR-29.4 | Propietario ve todos los usuarios | Login como propietario, buscar nombre de cualquier rol | Muestra todos los roles en la sección "Usuarios" | ✅ |
+| PR-29.5 | Resultado de usuario navega a edición | Login como admin, clic en resultado de usuario | Navega a `/admin/usuarios/{id}/edit` | ✅ |
+| PR-29.6 | Placeholder actualizado | Ver el buscador en header | Texto "Buscar en el sistema..." | ✅ |
+
+---
+
+## 31. PR-30: Visibilidad de elementos en todos los temas+modos (2026-06-30)
+
+| ID | Caso de prueba | Pasos | Resultado esperado | ✅/❌ |
+|----|---------------|-------|--------------------|----|
+| PR-30.1 | Botón "Ingresar" en tema adultos modo día | Sin login, aplicar tema adultos + modo día | Botón "Ingresar" visible (texto blanco sobre header oscuro) | ✅ |
+| PR-30.2 | Botón "Ingresar" en tema niños modo día | Sin login, tema niños + modo día | Botón visible | ✅ |
+| PR-30.3 | Botón "Ingresar" en modo noche | Cualquier tema + modo noche | Botón visible | ✅ |
+| PR-30.4 | Tamaño de fuente base | Abrir el sitio sin modificar escala | Fuente base 14px (más compacta que la anterior de 16px) | ✅ |
+| PR-30.5 | Reset de escala persiste | Ajustar fuente a 1.3 → clic en "A" (reset) → recargar | Fuente vuelve a escala 1 y permanece tras recargar | ✅ |
+
+---
+
 ## Resumen de casos de prueba
 
 | Sección | Cantidad de pruebas |
@@ -638,7 +681,10 @@ php artisan tinker --execute="echo App\Models\User::count();"
 | PR-25: Responsive | 5 |
 | PR-26: Pagos con Stripe (⏸️ pendiente de llaves reales) | 10 |
 | PR-27: Pagos con PagoFácil (✅ probado vía API/BD y clic real en navegador, ⏸️ pendiente solo el túnel de callback) | 14 |
-| **TOTAL** | **188 pruebas + 6 flujos E2E** |
+| PR-28: Layout fijo y sidebar colapsable | 9 |
+| PR-29: Buscador multifuncional con usuarios | 6 |
+| PR-30: Visibilidad elementos en todos los temas+modos | 5 |
+| **TOTAL** | **208 pruebas + 6 flujos E2E** |
 
 ---
 

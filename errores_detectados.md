@@ -129,6 +129,25 @@ Este archivo registra los errores detectados durante las pruebas MVP.
 * **Solución aplicada**: se separó el estado en `qrUnico`/`qrCuotas` y `mensajeEstadoUnico`/`mensajeEstadoCuotas` (variables independientes, antes mezcladas en `qrPf`/`mensajeEstadoPf`), con una función `verificarEstadoQr(paymentNumber, mensajeRef)` parametrizada para no duplicar lógica.
 * **Verificación**: con un pedido de prueba de Bs. 340 (3 cuotas de Bs. 113.33/113.33/113.34), tras la corrección el texto mostró correctamente `"QR de la cuota 1 de 3"`, y generar el QR de pago único ya no contamina la pestaña de cuotas (cada una conserva su propio QR independiente).
 
+## 20. SQL SQLSTATE[42703] en página de reportes — columna `detalle_pedido.subtotal` inexistente
+* **Estado:** ✅ Corregido
+* **Error message**: `SQLSTATE[42703]: Undefined column: 7 ERROR: no existe la columna detalle_pedido.subtotal`
+* **Causa/Problema**: `ReporteController.php` usaba `COALESCE(SUM(detalle_pedido.subtotal), 0)` en dos queries (top productos y ventas por categoría). La tabla `detalle_pedido` heredada del proyecto Java no tiene columna `subtotal` — solo tiene `cantidad` y `precio_unitario`.
+* **Solución aplicada**: Reemplazado en ambas queries por `COALESCE(SUM(detalle_pedido.cantidad * detalle_pedido.precio_unitario), 0)`.
+* **Archivos**: `app/Http/Controllers/Admin/ReporteController.php` (líneas 52 y 74).
+
+## 21. Botón "Ingresar" invisible en modo luz (tema adultos)
+* **Estado:** ✅ Corregido
+* **Causa/Problema**: En `tema-adultos.modo-dia`, `--color-primary: #1C1C1C` y `--bg-header: #1C1C1C` son idénticos. El `.btn-outline` usaba `color: var(--color-primary)` y `border: 1.5px solid var(--color-primary)` — botón completamente invisible sobre el header del mismo color.
+* **Solución aplicada**: Regla CSS `.topbar .btn-outline { border-color: rgba(255,255,255,0.5); color: white; }` scoped al topbar. Funciona en todos los temas porque el topbar siempre tiene fondo oscuro (`--bg-header`) en las 6 combinaciones tema+modo.
+* **Archivos**: `resources/js/Layouts/AppLayout.vue` (sección `<style>`).
+
+## 22. Reset de escala de fuente no persistía entre navegaciones
+* **Estado:** ✅ Corregido
+* **Causa/Problema**: `resetFuente()` en `useTema.js` actualizaba `fontScale.value = 1` pero nunca llamaba a `localStorage.setItem()`. Al navegar a otra página (nueva instancia del composable), la escala se re-leía del localStorage y volvía al valor anterior.
+* **Solución aplicada**: Añadido `localStorage.setItem('fontScale', '1')` dentro de `resetFuente()`.
+* **Archivos**: `resources/js/composables/useTema.js` (función `resetFuente`).
+
 ---
 
 ## Cambios de código realizados — sesión 1
