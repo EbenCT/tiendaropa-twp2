@@ -56,6 +56,7 @@ export function useTema() {
 
     function resetFuente() {
         fontScale.value = 1
+        localStorage.setItem('fontScale', '1')
         aplicarClases()
     }
 

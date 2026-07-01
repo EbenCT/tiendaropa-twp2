@@ -49,7 +49,7 @@ class ReporteController extends Controller
             ->join('producto', 'producto.id', '=', 'detalle_pedido.producto_id')
             ->join('pedido', 'pedido.id', '=', 'detalle_pedido.pedido_id')
             ->join('venta', 'venta.pedido_id', '=', 'pedido.id')
-            ->selectRaw("producto.id, producto.nombre, SUM(detalle_pedido.cantidad) as total_uds, COALESCE(SUM(detalle_pedido.subtotal), 0) as total_bs")
+            ->selectRaw("producto.id, producto.nombre, SUM(detalle_pedido.cantidad) as total_uds, COALESCE(SUM(detalle_pedido.cantidad * detalle_pedido.precio_unitario), 0) as total_bs")
             ->whereRaw("EXTRACT(YEAR FROM venta.fecha) = ?", [$anio]);
 
         if ($mes) {
@@ -71,7 +71,7 @@ class ReporteController extends Controller
             ->join('categoria', 'categoria.id', '=', 'producto.categoria_id')
             ->join('pedido', 'pedido.id', '=', 'detalle_pedido.pedido_id')
             ->join('venta', 'venta.pedido_id', '=', 'pedido.id')
-            ->selectRaw("categoria.nombre as categoria, SUM(detalle_pedido.cantidad) as total_uds, COALESCE(SUM(detalle_pedido.subtotal), 0) as total_bs")
+            ->selectRaw("categoria.nombre as categoria, SUM(detalle_pedido.cantidad) as total_uds, COALESCE(SUM(detalle_pedido.cantidad * detalle_pedido.precio_unitario), 0) as total_bs")
             ->whereRaw("EXTRACT(YEAR FROM venta.fecha) = ?", [$anio])
             ->when($mes, fn($q) => $q->whereRaw("EXTRACT(MONTH FROM venta.fecha) = ?", [$mes]))
             ->groupBy('categoria.nombre')

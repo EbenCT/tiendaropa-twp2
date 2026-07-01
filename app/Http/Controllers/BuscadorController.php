@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Producto;
 use App\Models\Categoria;
-use App\Models\Catalogo;
+use App\Models\User;
 use Illuminate\Http\Request;
 
 class BuscadorController extends Controller
@@ -50,10 +50,38 @@ class BuscadorController extends Controller
                 'url'    => route('catalogo', ['categoria' => $c->id]),
             ]);
 
+        // Usuarios (vendedor+ pueden buscar clientes, propietario+ ven todos)
+        $usuarios = $this->buscarUsuarios($q, $nivelRol);
+
         // Acciones del sistema (filtradas por rol)
         $acciones = $this->accionesSistema($q, $nivelRol);
 
-        return response()->json(compact('productos', 'categorias', 'acciones'));
+        return response()->json(compact('productos', 'categorias', 'usuarios', 'acciones'));
+    }
+
+    private function buscarUsuarios(string $q, int $nivelRol): array
+    {
+        if ($nivelRol < 2) return [];
+
+        $query = User::where('activo', true)
+            ->where(fn($sq) => $sq
+                ->where('nombre', 'ilike', "%{$q}%")
+                ->orWhere('apellido', 'ilike', "%{$q}%")
+                ->orWhere('email', 'ilike', "%{$q}%")
+                ->orWhere('ci', 'ilike', "%{$q}%")
+            );
+
+        // Vendedores (nivel 2) solo ven clientes
+        if ($nivelRol < 3) {
+            $query->where('rol', 'cliente');
+        }
+
+        return $query->limit(5)->get()->map(fn($u) => [
+            'id'     => $u->id,
+            'nombre' => $u->nombre . ' ' . $u->apellido,
+            'rol'    => $u->rol_nuevo ?? $u->rol,
+            'url'    => route('admin.usuarios.edit', $u->id),
+        ])->toArray();
     }
 
     private function accionesSistema(string $q, int $nivelRol): array

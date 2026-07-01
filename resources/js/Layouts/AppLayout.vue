@@ -4,8 +4,8 @@
     <!-- ── TOPBAR ──────────────────────────────────────────── -->
     <header class="topbar">
 
-      <!-- Hamburger (mobile) -->
-      <button class="topbar-btn menu-toggle" @click="sidebarOpen = !sidebarOpen" title="Menú">
+      <!-- Hamburger / Collapse toggle -->
+      <button class="topbar-btn menu-toggle" @click="onMenuToggle" :title="sidebarCollapsed ? 'Expandir menú' : 'Colapsar menú'">
         <i class="fa-solid fa-bars"></i>
       </button>
 
@@ -24,7 +24,7 @@
             @input="onBuscar"
             @focus="mostrarResultados = true"
             type="text"
-            placeholder="Buscar productos, categorías..."
+            placeholder="Buscar en el sistema..."
             class="buscador-input"
             autocomplete="off"
           />
@@ -34,27 +34,39 @@
         </div>
 
         <!-- Dropdown resultados -->
-        <div v-if="mostrarResultados && (resultados.productos?.length || resultados.categorias?.length || resultados.acciones?.length)" class="buscador-dropdown slide-down">
+        <div v-if="mostrarResultados && (resultados.productos?.length || resultados.categorias?.length || resultados.usuarios?.length || resultados.acciones?.length)" class="buscador-dropdown slide-down">
           <div v-if="resultados.productos?.length">
-            <p class="dropdown-label">Productos</p>
+            <p class="dropdown-label"><i class="fa-solid fa-shirt"></i> Productos</p>
             <Link v-for="p in resultados.productos" :key="p.id" :href="p.url" class="dropdown-item" @click="limpiarBusqueda">
               <img v-if="p.imagen" :src="p.imagen" :alt="p.nombre" class="dropdown-img" />
               <div>
                 <p class="dropdown-item-nombre">{{ p.nombre }}</p>
-                <p class="dropdown-item-precio">Bs. {{ p.precio }}</p>
+                <p class="dropdown-item-meta">Bs. {{ p.precio }}</p>
               </div>
             </Link>
           </div>
           <div v-if="resultados.categorias?.length">
-            <p class="dropdown-label">Categorías</p>
+            <p class="dropdown-label"><i class="fa-solid fa-folder-open"></i> Categorías</p>
             <Link v-for="c in resultados.categorias" :key="c.id" :href="c.url" class="dropdown-item" @click="limpiarBusqueda">
-              <i class="fa-solid fa-folder-open" style="width:20px"></i> {{ c.nombre }}
+              <i class="fa-solid fa-folder" style="width:20px; color:var(--color-accent)"></i>
+              <p class="dropdown-item-nombre">{{ c.nombre }}</p>
+            </Link>
+          </div>
+          <div v-if="resultados.usuarios?.length">
+            <p class="dropdown-label"><i class="fa-solid fa-users"></i> Usuarios</p>
+            <Link v-for="u in resultados.usuarios" :key="u.id" :href="u.url" class="dropdown-item" @click="limpiarBusqueda">
+              <i class="fa-solid fa-circle-user" style="width:20px; font-size:1.1rem; color:var(--color-primary)"></i>
+              <div>
+                <p class="dropdown-item-nombre">{{ u.nombre }}</p>
+                <p class="dropdown-item-meta">{{ u.rol }}</p>
+              </div>
             </Link>
           </div>
           <div v-if="resultados.acciones?.length">
-            <p class="dropdown-label">Acciones del sistema</p>
+            <p class="dropdown-label"><i class="fa-solid fa-gear"></i> Acciones del sistema</p>
             <Link v-for="a in resultados.acciones" :key="a.url" :href="a.url" class="dropdown-item" @click="limpiarBusqueda">
-              <i class="fa-solid fa-gear" style="width:20px"></i> {{ a.label }}
+              <i class="fa-solid fa-arrow-right" style="width:20px; color:var(--color-secondary)"></i>
+              <p class="dropdown-item-nombre">{{ a.label }}</p>
             </Link>
           </div>
         </div>
@@ -140,7 +152,7 @@
       <div v-if="sidebarOpen" class="sidebar-overlay" @click="sidebarOpen = false"></div>
 
       <!-- SIDEBAR -->
-      <aside :class="['app-sidebar', { 'sidebar-open': sidebarOpen }]">
+      <aside :class="['app-sidebar', { 'sidebar-open': sidebarOpen, 'sidebar-collapsed': sidebarCollapsed }]">
 
         <!-- Logo en sidebar -->
         <Link :href="route('home')" class="sidebar-logo" @click="sidebarOpen = false">
@@ -159,20 +171,22 @@
               <button
                 :class="['sidebar-group-btn', { expanded: openGroups.includes(item.id) }]"
                 @click="toggleGroup(item.id)"
+                :title="sidebarCollapsed ? item.label : undefined"
               >
                 <i :class="['sidebar-icon', getIcon(item.route, item.label)]"></i>
-                <span>{{ item.label }}</span>
+                <span class="sidebar-text">{{ item.label }}</span>
                 <i class="fa-solid fa-chevron-right sidebar-chevron"></i>
               </button>
-              <div v-show="openGroups.includes(item.id)" class="sidebar-children">
+              <div v-show="openGroups.includes(item.id) && !sidebarCollapsed" class="sidebar-children">
                 <Link
                   v-for="hijo in item.hijos" :key="hijo.id"
                   :href="hijo.route ? route(hijo.route) : '#'"
                   :class="['sidebar-link', 'sidebar-child', { active: isActive(hijo.route) }]"
                   @click="sidebarOpen = false"
+                  :title="hijo.label"
                 >
                   <i :class="['sidebar-icon', getIcon(hijo.route, hijo.label)]"></i>
-                  <span>{{ hijo.label }}</span>
+                  <span class="sidebar-text">{{ hijo.label }}</span>
                 </Link>
               </div>
             </div>
@@ -183,9 +197,10 @@
               :href="item.route ? route(item.route) : '#'"
               :class="['sidebar-link', { active: isActive(item.route) }]"
               @click="sidebarOpen = false"
+              :title="item.label"
             >
               <i :class="['sidebar-icon', getIcon(item.route, item.label)]"></i>
-              <span>{{ item.label }}</span>
+              <span class="sidebar-text">{{ item.label }}</span>
             </Link>
 
           </template>
@@ -197,28 +212,28 @@
         <!-- Footer del sidebar -->
         <div class="sidebar-footer">
           <template v-if="$page.props.auth.user">
-            <div class="sidebar-user-info">
+            <div class="sidebar-user-info" :title="sidebarCollapsed ? ($page.props.auth.user.nombre + ' — ' + $page.props.auth.user.rol) : undefined">
               <i class="fa-solid fa-circle-user sidebar-icon"></i>
-              <div>
+              <div class="sidebar-text">
                 <p class="sidebar-user-name">{{ $page.props.auth.user.nombre }}</p>
                 <p class="sidebar-user-rol">{{ $page.props.auth.user.rol }}</p>
               </div>
             </div>
             <form @submit.prevent="logout">
-              <button type="submit" class="sidebar-link sidebar-logout">
+              <button type="submit" class="sidebar-link sidebar-logout" title="Cerrar Sesión">
                 <i class="fa-solid fa-right-from-bracket sidebar-icon"></i>
-                <span>Cerrar Sesión</span>
+                <span class="sidebar-text">Cerrar Sesión</span>
               </button>
             </form>
           </template>
           <template v-else>
-            <Link :href="route('login')" class="sidebar-link" @click="sidebarOpen = false">
+            <Link :href="route('login')" class="sidebar-link" @click="sidebarOpen = false" title="Ingresar">
               <i class="fa-solid fa-right-to-bracket sidebar-icon"></i>
-              <span>Ingresar</span>
+              <span class="sidebar-text">Ingresar</span>
             </Link>
-            <Link :href="route('registro')" class="sidebar-link" @click="sidebarOpen = false">
+            <Link :href="route('registro')" class="sidebar-link" @click="sidebarOpen = false" title="Registrarse">
               <i class="fa-solid fa-user-plus sidebar-icon"></i>
-              <span>Registrarse</span>
+              <span class="sidebar-text">Registrarse</span>
             </Link>
           </template>
         </div>
@@ -303,8 +318,18 @@ onBeforeUnmount(() => document.removeEventListener('click', clickFuera))
 const carritoCount = computed(() => usePage().props.carritoCount ?? 0)
 
 // ── Sidebar ──────────────────────────────────────────────────
-const sidebarOpen = ref(false)
-const openGroups  = ref([])
+const sidebarOpen      = ref(false)
+const sidebarCollapsed = ref(localStorage.getItem('sidebarCollapsed') === 'true')
+const openGroups       = ref([])
+
+function onMenuToggle() {
+  if (window.innerWidth >= 900) {
+    sidebarCollapsed.value = !sidebarCollapsed.value
+    localStorage.setItem('sidebarCollapsed', sidebarCollapsed.value)
+  } else {
+    sidebarOpen.value = !sidebarOpen.value
+  }
+}
 
 function toggleGroup(id) {
   const idx = openGroups.value.indexOf(id)
@@ -361,7 +386,7 @@ function logout() { router.post(route('logout')) }
 
 <style scoped>
 /* ── Shell ──────────────────────────────────────────────── */
-.app-shell { display: flex; flex-direction: column; min-height: 100vh; }
+.app-shell { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 
 /* ── Topbar ─────────────────────────────────────────────── */
 .topbar {
@@ -375,7 +400,7 @@ function logout() { router.post(route('logout')) }
   flex-shrink: 0;
 }
 
-.menu-toggle { display: none; }
+.menu-toggle { display: flex; }
 
 .topbar-logo {
   display: flex; align-items: center; gap: 0.5rem;
@@ -407,7 +432,8 @@ function logout() { router.post(route('logout')) }
 .dropdown-item:hover { background: var(--bg-secondary); }
 .dropdown-img { width: 36px; height: 36px; object-fit: cover; border-radius: var(--radius-sm); }
 .dropdown-item-nombre { font-size: 0.875rem; font-weight: 500; }
-.dropdown-item-precio { font-size: 0.75rem; color: var(--color-accent); }
+.dropdown-item-meta { font-size: 0.75rem; color: var(--color-accent); }
+.dropdown-label { display: flex; align-items: center; gap: 0.4rem; }
 
 /* Controles topbar */
 .topbar-controles { display: flex; align-items: center; gap: 0.5rem; }
@@ -420,6 +446,15 @@ function logout() { router.post(route('logout')) }
 }
 .topbar-btn:hover { background: rgba(255,255,255,0.22); }
 .topbar-auth-btn { padding: 0.35rem 0.875rem; font-size: 0.83rem; }
+/* Botones de auth en topbar: siempre visibles sobre el fondo del header */
+.topbar .btn-outline {
+  border-color: rgba(255,255,255,0.5);
+  color: white;
+}
+.topbar .btn-outline:hover {
+  background: rgba(255,255,255,0.2);
+  color: white;
+}
 
 /* User dropdown */
 .user-name { font-size: 0.83rem; max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -462,7 +497,7 @@ function logout() { router.post(route('logout')) }
 .font-btn:hover { background: rgba(255,255,255,0.25); }
 
 /* ── Body + Sidebar + Main ─────────────────────────────── */
-.app-body { display: flex; flex: 1; overflow: hidden; min-height: 0; }
+.app-body { display: flex; height: calc(100vh - 60px); overflow: hidden; }
 
 .sidebar-overlay { display: none; }
 
@@ -470,9 +505,27 @@ function logout() { router.post(route('logout')) }
   width: 240px; flex-shrink: 0;
   background: var(--bg-card); border-right: 1px solid var(--border-color);
   display: flex; flex-direction: column;
-  height: calc(100vh - 60px); position: sticky; top: 60px;
-  overflow-y: auto; transition: transform 0.3s ease;
+  height: 100%; overflow-y: auto;
+  transition: width 0.28s ease;
 }
+
+/* Collapsed: icon-only mode */
+.app-sidebar.sidebar-collapsed { width: 60px; overflow-x: hidden; }
+.app-sidebar.sidebar-collapsed .sidebar-logo { justify-content: center; padding: 1rem 0; }
+.app-sidebar.sidebar-collapsed .sidebar-text { display: none; }
+.app-sidebar.sidebar-collapsed .sidebar-chevron { display: none; }
+.app-sidebar.sidebar-collapsed .sidebar-link,
+.app-sidebar.sidebar-collapsed .sidebar-group-btn {
+  justify-content: center; padding: 0.7rem 0;
+  border-left: none;
+}
+.app-sidebar.sidebar-collapsed .sidebar-link.active {
+  background: color-mix(in srgb, var(--color-primary) 15%, var(--bg-card));
+  border-left: none; border-radius: 0;
+}
+.app-sidebar.sidebar-collapsed .sidebar-icon { width: auto; font-size: 1rem; }
+.app-sidebar.sidebar-collapsed .sidebar-user-info { justify-content: center; padding: 0.75rem 0; }
+.app-sidebar.sidebar-collapsed .sidebar-children { display: none; }
 
 /* Logo sidebar */
 .sidebar-logo {
@@ -534,11 +587,11 @@ function logout() { router.post(route('logout')) }
 .sidebar-logout:hover { background: color-mix(in srgb, var(--color-danger) 10%, var(--bg-card)) !important; }
 
 /* ── Main content area ──────────────────────────────────── */
-.app-main { flex: 1; display: flex; flex-direction: column; overflow-y: auto; min-width: 0; }
+.app-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
 
-.flash-container { padding: 1rem 1.5rem 0; }
+.flash-container { padding: 0.75rem 1.5rem 0; flex-shrink: 0; }
 
-.page-content { flex: 1; padding: 1.5rem; }
+.page-content { flex: 1; padding: 1.5rem; overflow-y: auto; }
 
 /* Footer */
 .app-footer {
@@ -560,15 +613,21 @@ function logout() { router.post(route('logout')) }
 
 /* ── Responsive ─────────────────────────────────────────── */
 @media (max-width: 900px) {
-  .menu-toggle { display: flex; }
   .topbar-logo-text { display: inline; }
 
   .app-sidebar {
     position: fixed; left: 0; top: 60px;
     height: calc(100vh - 60px); z-index: 190;
     transform: translateX(-100%);
+    width: 240px !important; /* nunca colapsar en mobile */
   }
   .app-sidebar.sidebar-open { transform: translateX(0); box-shadow: 4px 0 20px rgba(0,0,0,0.25); }
+  /* Restaurar elementos ocultos por collapsed en desktop */
+  .app-sidebar .sidebar-text { display: inline !important; }
+  .app-sidebar .sidebar-chevron { display: inline !important; }
+  .app-sidebar .sidebar-link,
+  .app-sidebar .sidebar-group-btn { justify-content: flex-start !important; padding: 0.625rem 1.25rem !important; border-left: 3px solid transparent !important; }
+  .app-sidebar .sidebar-icon { width: 16px !important; }
 
   .sidebar-overlay {
     display: block; position: fixed; inset: 0; top: 60px;

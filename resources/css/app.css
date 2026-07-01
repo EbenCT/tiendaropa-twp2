@@ -11,7 +11,7 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html {
     scroll-behavior: smooth;
-    font-size: calc(16px * var(--font-scale, 1));
+    font-size: calc(14px * var(--font-scale, 1));
 }
 body {
     font-family: var(--font-body);
