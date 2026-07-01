@@ -427,6 +427,7 @@ El `paymentNumber` se reconstruye determinísticamente — no se persiste como c
 | 13 | Pagos con Stripe (modo TEST) | ✅ Completa (pendiente webhook secret real) |
 | 14 | Pagos con PagoFácil Bolivia | ✅ Implementada y probada contra sandbox real |
 | 15 | Mejoras UI/UX (layout fijo, sidebar colapsable, buscador multifuncional, fuente) | ✅ Completa |
+| 16 | Carga de archivos de imagen en productos (local disk + URL externa) | ✅ Completa |
 
 **Métricas:**
 
@@ -557,6 +558,11 @@ El `paymentNumber` se reconstruye determinísticamente — no se persiste como c
 - **Estado:** ✅ Corregido
 - **Causa:** `resetFuente()` en `useTema.js` actualizaba `fontScale.value = 1` pero nunca llamaba a `localStorage.setItem()`. Al navegar, la escala se re-leía del localStorage con el valor anterior.
 - **Fix:** Añadido `localStorage.setItem('fontScale', '1')` dentro de `resetFuente()`.
+
+### Error 23 — `Storage` facade importado pero sin uso — imágenes solo por URL
+- **Estado:** ✅ Resuelto (nueva funcionalidad)
+- **Causa:** El formulario de productos solo tenía un `<input type="text">` para URL. No había forma de subir un archivo real.
+- **Fix:** Implementada carga de archivos en `ProductoAdminController` (store/update) usando `Storage::disk('public')`. Formulario `Form.vue` actualizado con file input + preview + campo URL como alternativa. Symlink `public/storage → storage/app/public` creado con `php artisan storage:link`.
 
 ---
 
@@ -838,6 +844,18 @@ Para cuota: usar `"PedidoID":"P15-C1"` (cuota 1), `"P15-C2"` (cuota 2), etc.
 ---
 
 ## 14. Changelog de mejoras
+
+### 2026-06-30 — Carga de archivos de imagen en productos (Fase 16)
+
+**Archivos modificados:** `ProductoAdminController.php`, `resources/js/Pages/Admin/Productos/Form.vue`
+
+- `php artisan storage:link` ejecutado — `public/storage` apunta a `storage/app/public`
+- `store()` y `update()`: nueva validación `imagen` (jpg/png/webp, máx 2 MB); si llega archivo se guarda en `storage/app/public/productos/` y la URL resultante (`/storage/productos/...`) se escribe en `imagen_url`
+- `update()`: elimina el archivo local anterior si la imagen previa era de almacenamiento local
+- Formulario: preview de imagen actual, botón "Subir archivo" (file input oculto), campo URL externa como alternativa — ambas opciones son mutuamente exclusivas
+- **Seeders**: usar `https://picsum.photos/seed/producto{$i}/400/400` directamente en `imagen_url` — no requiere subir archivos
+
+---
 
 ### 2026-06-30 — Mejoras UI/UX (Fase 15)
 

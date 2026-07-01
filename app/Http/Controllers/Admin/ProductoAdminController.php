@@ -53,6 +53,7 @@ class ProductoAdminController extends Controller
             'categoria_id'    => 'required|exists:categoria,id',
             'precio_unitario' => 'required|numeric|min:0',
             'stock_actual'    => 'required|integer|min:0',
+            'imagen'          => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
             'imagen_url'      => 'nullable|string|max:500',
             'destacado'       => 'boolean',
             'es_nueva_coleccion' => 'boolean',
@@ -61,16 +62,25 @@ class ProductoAdminController extends Controller
             'categoria_id.required'    => 'La categoría es obligatoria.',
             'precio_unitario.required' => 'El precio es obligatorio.',
             'stock_actual.required'    => 'El stock es obligatorio.',
+            'imagen.image'             => 'El archivo debe ser una imagen.',
+            'imagen.max'               => 'La imagen no puede superar 2 MB.',
         ]);
 
-        $producto = Producto::create(array_merge(
+        $data = array_merge(
             $request->only(['nombre', 'descripcion', 'categoria_id', 'precio_unitario', 'stock_actual', 'imagen_url']),
             [
                 'activo'            => true,
                 'destacado'         => $request->boolean('destacado'),
                 'es_nueva_coleccion'=> $request->boolean('es_nueva_coleccion'),
             ]
-        ));
+        );
+
+        if ($request->hasFile('imagen')) {
+            $path = $request->file('imagen')->store('productos', 'public');
+            $data['imagen_url'] = Storage::disk('public')->url($path);
+        }
+
+        $producto = Producto::create($data);
 
         // Tallas
         if ($request->has('tallas')) {
@@ -106,6 +116,7 @@ class ProductoAdminController extends Controller
             'categoria_id'    => 'required|exists:categoria,id',
             'precio_unitario' => 'required|numeric|min:0',
             'stock_actual'    => 'required|integer|min:0',
+            'imagen'          => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
             'imagen_url'      => 'nullable|string|max:500',
             'destacado'       => 'boolean',
             'es_nueva_coleccion' => 'boolean',
@@ -115,16 +126,33 @@ class ProductoAdminController extends Controller
             'categoria_id.required'    => 'La categoría es obligatoria.',
             'precio_unitario.required' => 'El precio es obligatorio.',
             'stock_actual.required'    => 'El stock es obligatorio.',
+            'imagen.image'             => 'El archivo debe ser una imagen.',
+            'imagen.max'               => 'La imagen no puede superar 2 MB.',
         ]);
 
         $producto = Producto::findOrFail($id);
-        $producto->update(array_merge(
+
+        $data = array_merge(
             $request->only(['nombre', 'descripcion', 'categoria_id', 'precio_unitario', 'stock_actual', 'imagen_url', 'activo']),
             [
                 'destacado'         => $request->boolean('destacado'),
                 'es_nueva_coleccion'=> $request->boolean('es_nueva_coleccion'),
             ]
-        ));
+        );
+
+        if ($request->hasFile('imagen')) {
+            // Eliminar imagen local anterior si existe
+            if ($producto->imagen_url) {
+                $parsed = parse_url($producto->imagen_url, PHP_URL_PATH);
+                if ($parsed && str_starts_with($parsed, '/storage/')) {
+                    Storage::disk('public')->delete(substr($parsed, strlen('/storage/')));
+                }
+            }
+            $path = $request->file('imagen')->store('productos', 'public');
+            $data['imagen_url'] = Storage::disk('public')->url($path);
+        }
+
+        $producto->update($data);
 
         // Tallas sync
         if ($request->has('tallas')) {
