@@ -2,7 +2,7 @@
   <AppLayout>
     <div class="container">
       <div class="checkout-page fade-in">
-        <h1 class="page-title">📦 Confirmar Pedido</h1>
+        <h1 class="page-title"><i class="fa-solid fa-box"></i> Confirmar Pedido</h1>
 
         <div class="checkout-layout">
           <!-- Formulario de envío -->

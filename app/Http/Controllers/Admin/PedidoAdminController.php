@@ -11,7 +11,7 @@ class PedidoAdminController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Pedido::with(['usuario', 'detalles']);
+        $query = Pedido::with(['usuario', 'detalles', 'venta']);
 
         if ($request->filled('estado')) {
             $query->where('estado', $request->estado);

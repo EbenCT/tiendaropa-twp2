@@ -38,6 +38,7 @@ class EstadisticaController extends Controller
         $totalProductos = Producto::where('activo', true)->count();
         $totalPedidos   = Pedido::count();
         $totalVentas    = \DB::table('venta')->sum('total');
+        $totalUsuarios  = \DB::table('usuario')->count();
 
         return Inertia::render('Admin/Estadisticas/Index', [
             'topProductos'     => $topProductos,
@@ -47,6 +48,7 @@ class EstadisticaController extends Controller
                 'totalProductos' => $totalProductos,
                 'totalPedidos'   => $totalPedidos,
                 'totalVentas'    => $totalVentas,
+                'totalUsuarios'  => $totalUsuarios,
             ],
         ]);
     }

@@ -2,7 +2,7 @@
   <AppLayout>
     <div class="container">
       <div class="carrito-page fade-in">
-        <h1 class="page-title">🛒 Mi Carrito</h1>
+        <h1 class="page-title"><i class="fa-solid fa-cart-shopping"></i> Mi Carrito</h1>
 
         <div v-if="items.length" class="carrito-layout">
           <div class="carrito-items">
@@ -23,7 +23,7 @@
                 <p class="subtotal-label">Subtotal</p>
                 <p class="subtotal-valor">Bs. {{ Number(item.subtotal).toFixed(2) }}</p>
               </div>
-              <button @click="eliminar(item.id)" class="item-eliminar" title="Eliminar">🗑️</button>
+              <button @click="eliminar(item.id)" class="item-eliminar" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
             </div>
           </div>
 
@@ -49,7 +49,7 @@
         </div>
 
         <div v-else class="empty-state">
-          <p class="empty-icon">🛒</p>
+          <div class="empty-icon"><i class="fa-solid fa-cart-shopping"></i></div>
           <p>Tu carrito está vacío</p>
           <Link :href="route('catalogo')" class="btn btn-primary" style="margin-top:1rem">Explorar Catálogo</Link>
         </div>
@@ -106,6 +106,6 @@ function eliminar(id) {
 .resumen-divider { border:none; border-top:1px solid var(--border-color); margin:0.75rem 0; }
 .btn-full { width:100%; justify-content:center; }
 .empty-state { text-align:center; padding:4rem 0; color:var(--text-secondary); }
-.empty-icon { font-size:4rem; margin-bottom:1rem; }
+.empty-icon { font-size:4rem; margin-bottom:1rem; color:var(--text-secondary); }
 @media (max-width:768px) { .carrito-layout { grid-template-columns:1fr; } .carrito-item { flex-wrap:wrap; } }
 </style>

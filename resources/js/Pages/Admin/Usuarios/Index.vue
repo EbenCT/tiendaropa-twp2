@@ -3,7 +3,7 @@
     <div class="container">
       <div class="admin-page fade-in">
         <div class="admin-header">
-          <h1 class="page-title">👥 Gestión de Usuarios</h1>
+          <h1 class="page-title"><i class="fa-solid fa-users"></i> Gestión de Usuarios</h1>
           <Link :href="route('admin.usuarios.create')" class="btn btn-primary">+ Nuevo Usuario</Link>
         </div>
 
@@ -34,7 +34,7 @@
                 <td><span :class="['status-dot', u.activo ? 'active' : 'inactive']">{{ u.activo ? 'Activo' : 'Inactivo' }}</span></td>
                 <td class="actions-cell">
                   <Link :href="route('admin.usuarios.edit', u.id)" class="btn btn-outline btn-xs">Editar</Link>
-                  <button @click="desactivar(u.id)" class="btn btn-xs btn-danger" v-if="u.activo">✕</button>
+                  <button @click="desactivar(u.id)" class="btn btn-xs btn-danger" v-if="u.activo" title="Desactivar"><i class="fa-solid fa-xmark"></i></button>
                 </td>
               </tr>
             </tbody>

@@ -110,6 +110,7 @@ Route::middleware(['auth', 'role:vendedor'])->prefix('admin')->name('admin.')->g
     // Productos
     Route::resource('productos', ProductoAdminController::class)
         ->names('productos');
+    Route::patch('productos/{id}/toggle-activo', [ProductoAdminController::class, 'toggleActivo'])->name('productos.toggle-activo');
 
     // Inventario
     Route::prefix('inventario')->name('inventario.')->group(function () {
@@ -153,4 +154,5 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     // Menú dinámico
     Route::resource('menu', MenuAdminController::class)
         ->names('menu');
+    Route::patch('menu/{id}/toggle', [MenuAdminController::class, 'toggleActivo'])->name('menu.toggle');
 });

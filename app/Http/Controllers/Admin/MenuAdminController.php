@@ -89,6 +89,20 @@ class MenuAdminController extends Controller
             ->with('success', 'Ítem de menú actualizado.');
     }
 
+    public function toggleActivo(int $id)
+    {
+        $item = MenuItem::findOrFail($id);
+        $nuevoEstado = !$item->activo;
+        $item->update(['activo' => $nuevoEstado]);
+
+        for ($i = 0; $i <= 4; $i++) {
+            Cache::forget("menu_nivel_{$i}");
+        }
+
+        $msg = $nuevoEstado ? 'Ítem activado.' : 'Ítem desactivado.';
+        return back()->with('success', $msg);
+    }
+
     public function destroy(int $id)
     {
         $item = MenuItem::findOrFail($id);

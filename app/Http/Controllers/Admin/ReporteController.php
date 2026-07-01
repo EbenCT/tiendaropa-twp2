@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Categoria;
+use App\Models\Producto;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -11,14 +13,29 @@ class ReporteController extends Controller
 {
     public function index(Request $request)
     {
-        $anio = $request->get('anio', date('Y'));
+        $anio       = (int) $request->get('anio', date('Y'));
+        $mes        = $request->filled('mes') ? (int) $request->mes : null;
+        $categoriaId = $request->filled('categoria') ? (int) $request->categoria : null;
 
-        // Ventas por mes
-        $ventasPorMes = DB::table('venta')
-            ->selectRaw("EXTRACT(MONTH FROM fecha) as mes, COUNT(*) as cantidad, COALESCE(SUM(total), 0) as total")
-            ->whereRaw("EXTRACT(YEAR FROM fecha) = ?", [$anio])
-            ->groupByRaw("EXTRACT(MONTH FROM fecha)")
-            ->orderByRaw("EXTRACT(MONTH FROM fecha)")
+        // ── Ventas por mes ───────────────────────────────────────────
+        $qVentas = DB::table('venta')
+            ->join('pedido', 'pedido.id', '=', 'venta.pedido_id')
+            ->selectRaw("EXTRACT(MONTH FROM venta.fecha) as mes, COUNT(*) as cantidad, COALESCE(SUM(venta.total), 0) as total")
+            ->whereRaw("EXTRACT(YEAR FROM venta.fecha) = ?", [$anio]);
+
+        if ($mes) {
+            $qVentas->whereRaw("EXTRACT(MONTH FROM venta.fecha) = ?", [$mes]);
+        }
+
+        if ($categoriaId) {
+            $qVentas->join('detalle_pedido', 'detalle_pedido.pedido_id', '=', 'pedido.id')
+                ->join('producto', 'producto.id', '=', 'detalle_pedido.producto_id')
+                ->where('producto.categoria_id', $categoriaId);
+        }
+
+        $ventasPorMes = $qVentas
+            ->groupByRaw("EXTRACT(MONTH FROM venta.fecha)")
+            ->orderByRaw("EXTRACT(MONTH FROM venta.fecha)")
             ->get()
             ->map(fn($row) => [
                 'mes'      => (int) $row->mes,
@@ -27,7 +44,41 @@ class ReporteController extends Controller
                 'total'    => (float) $row->total,
             ]);
 
-        // Años disponibles
+        // ── Top productos del periodo ────────────────────────────────
+        $qTop = DB::table('detalle_pedido')
+            ->join('producto', 'producto.id', '=', 'detalle_pedido.producto_id')
+            ->join('pedido', 'pedido.id', '=', 'detalle_pedido.pedido_id')
+            ->join('venta', 'venta.pedido_id', '=', 'pedido.id')
+            ->selectRaw("producto.id, producto.nombre, SUM(detalle_pedido.cantidad) as total_uds, COALESCE(SUM(detalle_pedido.subtotal), 0) as total_bs")
+            ->whereRaw("EXTRACT(YEAR FROM venta.fecha) = ?", [$anio]);
+
+        if ($mes) {
+            $qTop->whereRaw("EXTRACT(MONTH FROM venta.fecha) = ?", [$mes]);
+        }
+        if ($categoriaId) {
+            $qTop->where('producto.categoria_id', $categoriaId);
+        }
+
+        $topProductos = $qTop
+            ->groupBy('producto.id', 'producto.nombre')
+            ->orderByDesc('total_uds')
+            ->limit(10)
+            ->get();
+
+        // ── Ventas por categoría ─────────────────────────────────────
+        $ventasPorCategoria = DB::table('detalle_pedido')
+            ->join('producto', 'producto.id', '=', 'detalle_pedido.producto_id')
+            ->join('categoria', 'categoria.id', '=', 'producto.categoria_id')
+            ->join('pedido', 'pedido.id', '=', 'detalle_pedido.pedido_id')
+            ->join('venta', 'venta.pedido_id', '=', 'pedido.id')
+            ->selectRaw("categoria.nombre as categoria, SUM(detalle_pedido.cantidad) as total_uds, COALESCE(SUM(detalle_pedido.subtotal), 0) as total_bs")
+            ->whereRaw("EXTRACT(YEAR FROM venta.fecha) = ?", [$anio])
+            ->when($mes, fn($q) => $q->whereRaw("EXTRACT(MONTH FROM venta.fecha) = ?", [$mes]))
+            ->groupBy('categoria.nombre')
+            ->orderByDesc('total_bs')
+            ->get();
+
+        // ── Años disponibles ─────────────────────────────────────────
         $aniosDisponibles = DB::table('venta')
             ->selectRaw("DISTINCT EXTRACT(YEAR FROM fecha) as anio")
             ->orderBy('anio')
@@ -38,15 +89,21 @@ class ReporteController extends Controller
             $aniosDisponibles = collect([(int) date('Y')]);
         }
 
-        $totalAnual = $ventasPorMes->sum('total');
+        $categorias  = Categoria::where('activo', true)->orderBy('nombre')->get(['id', 'nombre']);
+        $totalAnual  = $ventasPorMes->sum('total');
         $totalVentas = $ventasPorMes->sum('cantidad');
 
         return Inertia::render('Admin/Reportes/Index', [
-            'ventasPorMes'      => $ventasPorMes,
-            'anio'              => (int) $anio,
-            'aniosDisponibles'  => $aniosDisponibles,
-            'totalAnual'        => $totalAnual,
-            'totalVentas'       => $totalVentas,
+            'ventasPorMes'        => $ventasPorMes,
+            'topProductos'        => $topProductos,
+            'ventasPorCategoria'  => $ventasPorCategoria,
+            'anio'                => $anio,
+            'mes'                 => $mes,
+            'categoriaFiltro'     => $categoriaId,
+            'aniosDisponibles'    => $aniosDisponibles,
+            'categorias'          => $categorias,
+            'totalAnual'          => $totalAnual,
+            'totalVentas'         => $totalVentas,
         ]);
     }
 

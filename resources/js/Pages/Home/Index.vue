@@ -18,7 +18,7 @@
 
       <!-- Productos Destacados -->
       <section v-if="destacados.length" class="section fade-in">
-        <h2 class="section-title">⭐ Productos Destacados</h2>
+        <h2 class="section-title"><i class="fa-solid fa-star"></i> Productos Destacados</h2>
         <div class="productos-grid">
           <ProductoCard v-for="p in destacados" :key="p.id" :producto="p" />
         </div>
@@ -26,7 +26,7 @@
 
       <!-- Nueva Colección -->
       <section v-if="nuevaColeccion.length" class="section fade-in">
-        <h2 class="section-title">✨ Nueva Colección</h2>
+        <h2 class="section-title"><i class="fa-solid fa-wand-magic-sparkles"></i> Nueva Colección</h2>
         <div class="productos-grid">
           <ProductoCard v-for="p in nuevaColeccion" :key="p.id" :producto="p" />
         </div>
@@ -34,7 +34,7 @@
 
       <!-- Promociones -->
       <section v-if="promociones.length" class="section fade-in">
-        <h2 class="section-title">🏷️ Promociones Activas</h2>
+        <h2 class="section-title"><i class="fa-solid fa-tag"></i> Promociones Activas</h2>
         <div class="promociones-grid">
           <div v-for="promo in promociones" :key="promo.id" class="promo-card card">
             <div class="promo-header">
@@ -51,7 +51,7 @@
 
       <!-- Estado vacío -->
       <section v-if="!destacados.length && !nuevaColeccion.length && !promociones.length" class="empty-home">
-        <p>🛍️ Próximamente nuevos productos</p>
+        <p><i class="fa-solid fa-bag-shopping"></i> Próximamente nuevos productos</p>
         <Link :href="route('catalogo')" class="btn btn-primary" style="margin-top:1rem">Explorar Catálogo</Link>
       </section>
 

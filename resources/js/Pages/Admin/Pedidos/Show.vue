@@ -30,13 +30,14 @@
               <option value="ENTREGADO">Entregado</option>
             </select>
 
-            <h3 style="margin-top:1.5rem">Pago (solo lectura)</h3>
+            <h3 style="margin-top:1.5rem">Pago</h3>
             <template v-if="pago">
               <p class="hint" style="margin-bottom:0.25rem">Pasarela: {{ pago.gateway === 'pagofacil' ? 'QR PagoFácil' : 'Stripe' }}</p>
               <span :class="['pago-badge', estaPagado ? 'pago-ok' : 'pago-pend']">
                 {{ estaPagado ? 'Pagado' : (pago.stripe_status === 'failed' ? 'Fallido' : 'Pendiente') }}
               </span>
               <p v-if="pago.gateway === 'pagofacil' && pago.pagofacil_status" class="hint">Estado PagoFácil (crudo): {{ pago.pagofacil_status }}</p>
+              <div class="cuotas-scroll">
               <table v-if="pago.modalidad === 'CREDITO' && pago.cuotas?.length" class="cuotas-table">
                 <thead><tr><th>Cuota</th><th>Monto</th><th>Vence</th><th>Estado</th></tr></thead>
                 <tbody>
@@ -48,6 +49,7 @@
                   </tr>
                 </tbody>
               </table>
+              </div>
             </template>
             <p v-else class="hint">El cliente aún no inició un pago.</p>
           </div>
@@ -79,7 +81,8 @@ function cambiarEstado(estado) { router.patch(route('admin.pedidos.estado', prop
 .pago-badge { padding:0.2rem 0.75rem; border-radius:var(--radius-pill); font-size:0.75rem; font-weight:700; text-transform:uppercase; }
 .pago-ok { background:color-mix(in srgb, var(--color-success) 20%, var(--bg-card)); color:var(--color-success); }
 .pago-pend { background:color-mix(in srgb, var(--color-warning) 20%, var(--bg-card)); color:var(--color-warning); }
-.cuotas-table { width:100%; margin-top:1rem; font-size:0.8rem; border-collapse:collapse; }
-.cuotas-table th, .cuotas-table td { text-align:left; padding:0.3rem; border-bottom:1px solid var(--border-color); }
+.cuotas-scroll { overflow-x:auto; margin-top:1rem; }
+.cuotas-table { width:100%; min-width:320px; font-size:0.8rem; border-collapse:collapse; }
+.cuotas-table th, .cuotas-table td { text-align:left; padding:0.4rem 0.5rem; border-bottom:1px solid var(--border-color); white-space:nowrap; }
 @media (max-width:768px) { .show-layout { grid-template-columns:1fr; } }
 </style>

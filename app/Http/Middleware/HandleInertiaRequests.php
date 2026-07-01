@@ -76,12 +76,12 @@ class HandleInertiaRequests extends Middleware
     private function buildMenu(int $nivelUsuario): array
     {
         try {
-            // Cache del menú por nivel de rol — 5 minutos
             return \Cache::remember("menu_nivel_{$nivelUsuario}", 300, function () use ($nivelUsuario) {
                 return MenuItem::with('children')
                     ->whereNull('parent_id')
                     ->where('activo', true)
                     ->where('role_nivel_minimo', '<=', $nivelUsuario)
+                    ->when($nivelUsuario >= 2, fn ($q) => $q->where('role_nivel_minimo', '!=', 1))
                     ->orderBy('orden')
                     ->get()
                     ->map(fn ($item) => [
@@ -90,7 +90,7 @@ class HandleInertiaRequests extends Middleware
                         'route' => $item->route_name,
                         'icon'  => $item->icon,
                         'hijos' => $item->children
-                            ->filter(fn ($h) => $h->activo && $h->role_nivel_minimo <= $nivelUsuario)
+                            ->filter(fn ($h) => $h->activo && $h->role_nivel_minimo <= $nivelUsuario && !($nivelUsuario >= 2 && $h->role_nivel_minimo === 1))
                             ->map(fn ($h) => [
                                 'id'    => $h->id,
                                 'label' => $h->label,

@@ -2,7 +2,7 @@
   <AppLayout>
     <div class="container">
       <div class="admin-page fade-in">
-        <h1 class="page-title">📋 Gestión de Pedidos</h1>
+        <h1 class="page-title"><i class="fa-solid fa-clipboard-list"></i> Gestión de Pedidos</h1>
         <div class="filtros-inline card" style="margin-bottom:1.5rem">
           <select v-model="estadoFiltro" @change="filtrar" class="input" style="max-width:200px">
             <option value="">Todos los estados</option>
@@ -32,8 +32,8 @@
                   </select>
                 </td>
                 <td>{{ p.detalles?.length || 0 }}</td>
-                <td>Bs. {{ Number(p.total || 0).toFixed(2) }}</td>
-                <td>{{ new Date(p.created_at).toLocaleDateString('es-BO') }}</td>
+                <td>Bs. {{ Number(p.venta?.total || 0).toFixed(2) }}</td>
+                <td>{{ p.fecha ? new Date(p.fecha).toLocaleDateString('es-BO') : '—' }}</td>
                 <td><Link :href="route('admin.pedidos.show', p.id)" class="btn btn-outline btn-xs">Ver</Link></td>
               </tr>
             </tbody>

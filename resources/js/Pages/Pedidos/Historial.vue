@@ -2,7 +2,7 @@
   <AppLayout>
     <div class="container">
       <div class="historial-page fade-in">
-        <h1 class="page-title">📋 Mis Pedidos</h1>
+        <h1 class="page-title"><i class="fa-solid fa-clock-rotate-left"></i> Mis Pedidos</h1>
 
         <div v-if="pedidos.data.length" class="pedidos-list">
           <div v-for="pedido in pedidos.data" :key="pedido.id" class="pedido-card card">
@@ -33,7 +33,7 @@
         </div>
 
         <div v-else class="empty-state">
-          <p>📦 No tienes pedidos aún</p>
+          <p><i class="fa-solid fa-box-open"></i> No tienes pedidos aún</p>
           <Link :href="route('catalogo')" class="btn btn-primary" style="margin-top:1rem">Ir al Catálogo</Link>
         </div>
 

@@ -151,4 +151,14 @@ class ProductoAdminController extends Controller
 
         return back()->with('success', 'Producto desactivado.');
     }
+
+    public function toggleActivo(int $id)
+    {
+        $producto = Producto::findOrFail($id);
+        $nuevoEstado = !$producto->activo;
+        $producto->update(['activo' => $nuevoEstado]);
+
+        $msg = $nuevoEstado ? 'Producto activado.' : 'Producto desactivado.';
+        return back()->with('success', $msg);
+    }
 }

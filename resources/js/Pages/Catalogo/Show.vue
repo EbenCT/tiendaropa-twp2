@@ -69,10 +69,10 @@
             <!-- Acciones -->
             <div class="detail-actions">
               <button @click="agregarCarrito" class="btn btn-primary btn-lg" :disabled="formCarrito.processing">
-                🛒 {{ formCarrito.processing ? 'Agregando...' : 'Agregar al Carrito' }}
+                <i class="fa-solid fa-cart-shopping"></i> {{ formCarrito.processing ? 'Agregando...' : 'Agregar al Carrito' }}
               </button>
-              <button @click="toggleFavorito" class="btn btn-outline btn-icon" :disabled="formFav.processing">
-                {{ esFavorito ? '❤️' : '🤍' }}
+              <button @click="toggleFavorito" class="btn btn-outline btn-icon" :disabled="formFav.processing" :title="esFavorito ? 'Quitar de favoritos' : 'Agregar a favoritos'">
+                <i :class="esFavorito ? 'fa-solid fa-heart' : 'fa-regular fa-heart'"></i>
               </button>
             </div>
 

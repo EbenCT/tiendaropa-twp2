@@ -2,7 +2,7 @@
   <AppLayout>
     <div class="container">
       <div class="favs-page fade-in">
-        <h1 class="page-title">❤️ Mis Favoritos</h1>
+        <h1 class="page-title"><i class="fa-solid fa-heart"></i> Mis Favoritos</h1>
 
         <div v-if="favoritos.length" class="productos-grid">
           <div v-for="fav in favoritos" :key="fav.id" class="fav-card producto-card">
@@ -17,14 +17,14 @@
               </div>
             </Link>
             <div class="fav-actions">
-              <button @click="agregarCarrito(fav.producto.id)" class="btn btn-primary btn-sm">🛒 Agregar</button>
-              <button @click="quitarFavorito(fav.producto.id)" class="btn btn-outline btn-sm">❌ Quitar</button>
+              <button @click="agregarCarrito(fav.producto.id)" class="btn btn-primary btn-sm"><i class="fa-solid fa-cart-shopping"></i> Agregar</button>
+              <button @click="quitarFavorito(fav.producto.id)" class="btn btn-outline btn-sm"><i class="fa-solid fa-xmark"></i> Quitar</button>
             </div>
           </div>
         </div>
 
         <div v-else class="empty-state">
-          <p class="empty-icon">🤍</p>
+          <div class="empty-icon"><i class="fa-regular fa-heart"></i></div>
           <p>No tienes productos favoritos aún</p>
           <Link :href="route('catalogo')" class="btn btn-primary" style="margin-top:1rem">Explorar Catálogo</Link>
         </div>
@@ -57,5 +57,5 @@ function quitarFavorito(productoId) {
 .fav-actions { display:flex; gap:0.5rem; padding:0 1rem 1rem; }
 .btn-sm { padding:0.35rem 0.75rem; font-size:0.8rem; }
 .empty-state { text-align:center; padding:4rem 0; color:var(--text-secondary); }
-.empty-icon { font-size:4rem; margin-bottom:1rem; }
+.empty-icon { font-size:4rem; margin-bottom:1rem; color:var(--text-secondary); }
 </style>

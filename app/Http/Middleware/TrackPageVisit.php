@@ -14,9 +14,7 @@ class TrackPageVisit
 {
     public function handle(Request $request, Closure $next): mixed
     {
-        $response = $next($request);
-
-        // Solo rastrear requests GET que no sean de Inertia parciales
+        // Increment BEFORE $next() so HandleInertiaRequests::share() reads the updated count
         if ($request->isMethod('GET') && !$request->header('X-Inertia-Partial-Data')) {
             try {
                 $url = $request->path() === '/' ? '/' : '/' . $request->path();
@@ -40,7 +38,7 @@ class TrackPageVisit
             }
         }
 
-        return $response;
+        return $next($request);
     }
 
     private function resolvePageName(Request $request): string
