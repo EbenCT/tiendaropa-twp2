@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Inventario;
 use App\Models\Producto;
+use App\Services\BitacoraService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -69,6 +70,13 @@ class InventarioController extends Controller
         } else {
             $producto->decrement('stock_actual', max(0, $request->cantidad));
         }
+
+        $tipoLabel = $request->tipo === 'entrada' ? 'INGRESO' : 'SALIDA';
+        $tecnicaLabel = $request->tecnica ?: 'PROMEDIO';
+        BitacoraService::inventario(
+            $request->user()->id,
+            "{$tipoLabel} de {$request->cantidad} unidades — Producto ID {$request->producto_id} ({$tecnicaLabel})"
+        );
 
         return redirect()->route('admin.inventario.index')
             ->with('success', 'Movimiento de inventario registrado.');

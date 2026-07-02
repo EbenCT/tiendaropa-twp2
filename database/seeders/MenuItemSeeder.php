@@ -60,8 +60,9 @@ class MenuItemSeeder extends Seeder
 
         // ── Submenú Sistema (admin) ────────────────────────────────────
         $subSistema = [
-            ['label' => 'Menú Dinámico',  'route_name' => 'admin.menu.index',       'icon' => 'menu',       'role_nivel_minimo' => 4, 'orden' => 1],
-            ['label' => 'Estadísticas',   'route_name' => 'admin.estadisticas',     'icon' => 'trending-up','role_nivel_minimo' => 4, 'orden' => 2],
+            ['label' => 'Menú Dinámico',  'route_name' => 'admin.menu.index',       'icon' => 'menu',        'role_nivel_minimo' => 4, 'orden' => 1],
+            ['label' => 'Estadísticas',   'route_name' => 'admin.estadisticas',     'icon' => 'trending-up', 'role_nivel_minimo' => 4, 'orden' => 2],
+            ['label' => 'Bitácora',       'route_name' => 'admin.bitacora',         'icon' => 'scroll',      'role_nivel_minimo' => 3, 'orden' => 3],
         ];
         foreach ($subSistema as $sub) {
             DB::table('menu_item')->insert(array_merge($sub, [

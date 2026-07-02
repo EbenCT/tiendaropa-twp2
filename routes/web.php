@@ -17,9 +17,11 @@ use App\Http\Controllers\Admin\InventarioController;
 use App\Http\Controllers\Admin\PedidoAdminController;
 use App\Http\Controllers\Admin\UsuarioAdminController;
 use App\Http\Controllers\Admin\MenuAdminController;
+use App\Http\Controllers\Admin\BitacoraController;
 use App\Http\Controllers\Admin\EstadisticaController;
 use App\Http\Controllers\Admin\ReporteController;
 use App\Http\Controllers\Admin\DestacadoController;
+use App\Http\Controllers\PreferenciaController;
 use Illuminate\Support\Facades\Route;
 
 // ═══════════════════════════════════════════════════════════════
@@ -92,6 +94,9 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/{id}/pagar/pagofacil/estado',                 [PagoController::class, 'pagoFacilEstado'])->name('pagar.pagofacil.estado');
     });
 
+    // Preferencias de accesibilidad (tema, modo, escala) — guardadas en BD
+    Route::post('/preferencias', [PreferenciaController::class, 'guardar'])->name('preferencias.guardar');
+
     // Métodos de pago guardados (Stripe)
     Route::prefix('metodos-pago')->name('metodos-pago.')->group(function () {
         Route::get('/',                 [MetodoPagoController::class, 'index'])->name('index');
@@ -140,9 +145,12 @@ Route::middleware(['auth', 'role:propietario'])->prefix('admin')->name('admin.')
     Route::resource('usuarios', UsuarioAdminController::class)
         ->names('usuarios');
 
-    // Reportes
+    // Reportes y estadísticas
     Route::get('reportes', [ReporteController::class, 'index'])->name('reportes');
     Route::get('estadisticas', [EstadisticaController::class, 'index'])->name('estadisticas');
+
+    // Bitácora
+    Route::get('bitacora', [BitacoraController::class, 'index'])->name('bitacora');
 });
 
 // ═══════════════════════════════════════════════════════════════

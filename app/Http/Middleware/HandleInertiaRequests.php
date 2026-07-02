@@ -38,12 +38,15 @@ class HandleInertiaRequests extends Middleware
             // Usuario autenticado con datos básicos
             'auth' => [
                 'user' => $user ? [
-                    'id'       => $user->id,
-                    'nombre'   => $user->nombre,
-                    'apellido' => $user->apellido,
-                    'email'    => $user->email,
-                    'rol'      => $user->rol_nuevo ?? strtolower($user->rol ?? 'invitado'),
-                    'nivel'    => $rolNivel,
+                    'id'          => $user->id,
+                    'nombre'      => $user->nombre,
+                    'apellido'    => $user->apellido,
+                    'email'       => $user->email,
+                    'rol'         => $user->rol_nuevo ?? strtolower($user->rol ?? 'invitado'),
+                    'nivel'       => $rolNivel,
+                    'pref_tema'   => $user->pref_tema ?? 'adultos',
+                    'pref_modo'   => $user->pref_modo ?? 'auto',
+                    'pref_escala' => (float) ($user->pref_escala ?? 1.0),
                 ] : null,
             ],
 

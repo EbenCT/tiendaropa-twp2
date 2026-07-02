@@ -3,6 +3,7 @@
 namespace App\Services\PagoFacil;
 
 use App\Models\Pedido;
+use App\Services\BitacoraService;
 use Illuminate\Support\Facades\Log;
 
 class CallbackHandlerService
@@ -54,6 +55,10 @@ class CallbackHandlerService
 
         if ($pagado) {
             $pedido->confirmarPorPago();
+            BitacoraService::pago(
+                $pedido->usuario_id,
+                "Pago único PagoFácil confirmado — Pedido #{$pedido->id}"
+            );
         }
 
         Log::info("Pago único PagoFácil actualizado", ['pago_id' => $pago->id, 'estado' => $estadoCrudo]);
@@ -79,6 +84,13 @@ class CallbackHandlerService
 
         if ($pagado && $numCuota === 1) {
             $pedido->confirmarPorPago();
+        }
+
+        if ($pagado) {
+            BitacoraService::pago(
+                $pedido->usuario_id,
+                "Pago cuota #{$numCuota} PagoFácil confirmado — Pedido #{$pedido->id}"
+            );
         }
 
         Log::info("Cuota PagoFácil #{$numCuota} actualizada", ['cuota_id' => $cuota->id, 'estado' => $estadoCrudo]);

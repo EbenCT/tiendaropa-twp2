@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Services\BitacoraService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -32,6 +33,8 @@ class LoginController extends Controller
         ];
 
         if (!Auth::attempt($credenciales, $request->boolean('recordarme'))) {
+            BitacoraService::loginFallido($request->email);
+
             return back()->withErrors([
                 'email' => 'Las credenciales ingresadas no son correctas.',
             ])->onlyInput('email');
@@ -39,12 +42,19 @@ class LoginController extends Controller
 
         $request->session()->regenerate();
 
+        BitacoraService::login($request->email, Auth::id());
+
         return redirect()->intended(route('home'))
             ->with('success', '¡Bienvenido, ' . Auth::user()->nombre . '!');
     }
 
     public function destroy(Request $request)
     {
+        $user = Auth::user();
+        if ($user) {
+            BitacoraService::logout($user->id, $user->nombre . ' ' . $user->apellido);
+        }
+
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();

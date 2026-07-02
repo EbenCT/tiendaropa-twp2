@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\BitacoraService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -51,6 +52,8 @@ class RegisterController extends Controller
         ]);
 
         Auth::login($user);
+
+        BitacoraService::registro($user->id, $user->nombre . ' ' . $user->apellido);
 
         return redirect()->route('home')
             ->with('success', '¡Bienvenido, ' . $user->nombre . '! Tu cuenta ha sido creada.');

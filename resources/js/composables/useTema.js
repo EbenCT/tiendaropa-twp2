@@ -1,14 +1,38 @@
 import { ref, watch, onMounted } from 'vue'
+import { usePage } from '@inertiajs/vue3'
+import axios from 'axios'
 
 const TEMAS = ['ninos', 'jovenes', 'adultos']
 const HORA_DIA_INICIO   = 7   // 07:00
 const HORA_NOCHE_INICIO = 19  // 19:00
 
+// Carga preferencias desde servidor si el usuario está autenticado, o localStorage si es invitado
+function cargarPrefs() {
+    try {
+        const user = usePage().props.auth?.user
+        if (user?.pref_tema) {
+            return {
+                tema:  user.pref_tema   ?? 'adultos',
+                modo:  user.pref_modo   ?? 'auto',
+                scale: user.pref_escala ?? 1,
+            }
+        }
+    } catch (_) { /* usePage puede no estar disponible fuera del setup */ }
+
+    return {
+        tema:  localStorage.getItem('tema')      ?? 'adultos',
+        modo:  localStorage.getItem('modo')      ?? 'auto',
+        scale: parseFloat(localStorage.getItem('fontScale') ?? '1'),
+    }
+}
+
 export function useTema() {
-    const tema       = ref(localStorage.getItem('tema') ?? 'adultos')
-    const modo       = ref(localStorage.getItem('modo') ?? 'auto') // 'auto' | 'dia' | 'noche'
+    const prefs = cargarPrefs()
+
+    const tema       = ref(prefs.tema)
+    const modo       = ref(prefs.modo)
     const modoActual = ref('dia')
-    const fontScale  = ref(parseFloat(localStorage.getItem('fontScale') ?? '1'))
+    const fontScale  = ref(prefs.scale)
 
     function getModoAutomatico() {
         const hora = new Date().getHours()
@@ -29,16 +53,34 @@ export function useTema() {
         document.documentElement.style.setProperty('--font-scale', fontScale.value.toString())
     }
 
+    function persistir() {
+        localStorage.setItem('tema', tema.value)
+        localStorage.setItem('modo', modo.value)
+        localStorage.setItem('fontScale', fontScale.value.toString())
+
+        // Sincroniza con la BD si el usuario está autenticado
+        try {
+            const user = usePage().props.auth?.user
+            if (user) {
+                axios.post('/preferencias', {
+                    tema:   tema.value,
+                    modo:   modo.value,
+                    escala: fontScale.value,
+                }).catch(() => { /* silencioso */ })
+            }
+        } catch (_) { /* fuera de contexto Inertia */ }
+    }
+
     function setTema(nuevoTema) {
         if (!TEMAS.includes(nuevoTema)) return
         tema.value = nuevoTema
-        localStorage.setItem('tema', nuevoTema)
+        persistir()
         aplicarClases()
     }
 
     function setModo(nuevoModo) {
         modo.value = nuevoModo
-        localStorage.setItem('modo', nuevoModo)
+        persistir()
         aplicarClases()
     }
 
@@ -50,13 +92,13 @@ export function useTema() {
     function escalaFuente(delta) {
         const nuevo = Math.min(Math.max(fontScale.value + delta, 0.8), 1.4)
         fontScale.value = parseFloat(nuevo.toFixed(1))
-        localStorage.setItem('fontScale', fontScale.value.toString())
+        persistir()
         aplicarClases()
     }
 
     function resetFuente() {
         fontScale.value = 1
-        localStorage.setItem('fontScale', '1')
+        persistir()
         aplicarClases()
     }
 

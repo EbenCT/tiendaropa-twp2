@@ -5,6 +5,7 @@ namespace App\Services\Stripe;
 use App\Models\Cuota;
 use App\Models\MetodoPagoUsuario;
 use App\Models\Pago;
+use App\Services\BitacoraService;
 use Illuminate\Support\Facades\Log;
 use Stripe\Event;
 use Stripe\PaymentMethod;
@@ -50,6 +51,12 @@ class WebhookHandlerService
         ]);
 
         $pago->venta?->pedido?->confirmarPorPago();
+
+        $usuarioId = $pago->venta?->pedido?->usuario_id;
+        $pedidoId  = $pago->venta?->pedido?->id;
+        if ($usuarioId) {
+            BitacoraService::pago($usuarioId, "Pago único Stripe confirmado — Pedido #{$pedidoId}");
+        }
 
         Log::info("Pago único confirmado vía checkout.session.completed", ['pago_id' => $pago->id]);
     }
